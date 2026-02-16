@@ -1,65 +1,144 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+
+interface Patient {
+  id: string;
+  name: string;
+  dob: string;
+  phone: string;
+}
+
+export default function PatientsPage() {
+  const [patients] = useState<Patient[]>([
+    {
+      id: "1",
+      name: "John Smith",
+      dob: "1980-05-15",
+      phone: "(555) 123-4567",
+    },
+    {
+      id: "2",
+      name: "Sarah Johnson",
+      dob: "1992-08-22",
+      phone: "(555) 234-5678",
+    },
+    {
+      id: "3",
+      name: "Michael Brown",
+      dob: "1967-11-03",
+      phone: "(555) 345-6789",
+    },
+    {
+      id: "4",
+      name: "Emily Davis",
+      dob: "1995-02-18",
+      phone: "(555) 456-7890",
+    },
+    {
+      id: "5",
+      name: "Robert Wilson",
+      dob: "1958-09-27",
+      phone: "(555) 567-8901",
+    },
+  ]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const handleAddPatient = () => {
+    // Placeholder for add patient functionality
+    alert("Add New Patient form would open here");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              IV Hydration Clinic - Patients
+            </h1>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Manage patient information and records
+            </p>
+          </div>
+          <button
+            onClick={handleAddPatient}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Add New Patient
+          </button>
         </div>
-      </main>
+
+        {/* Patient List */}
+        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Patient List
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              {patients.length} total patients
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Date of Birth
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Phone
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                {patients.map((patient) => (
+                  <tr
+                    key={patient.id}
+                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                      {patient.name}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {formatDate(patient.dob)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {patient.phone}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
