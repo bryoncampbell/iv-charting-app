@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Encounter } from "@/types";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { encounterRowToEncounter } from "@/lib/supabaseMappers";
 
 // Option lists for breakdowns (must match encounter order form)
 const ADDITIVES_VITAMINS_OPTIONS = [
@@ -42,6 +44,20 @@ export default function ReportsPage() {
   const [showRevenue, setShowRevenue] = useState(false);
 
   useEffect(() => {
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("encounters")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (error) {
+            setEncounters([]);
+            return;
+          }
+          setEncounters((data ?? []).map((row) => encounterRowToEncounter(row)));
+        });
+      return;
+    }
     const stored = localStorage.getItem(STORAGE_KEYS.encounters);
     if (stored) {
       try {

@@ -8,6 +8,8 @@ import { getPatientDisplayName } from "@/types";
 import { logAudit } from "@/lib/audit";
 import { newId, nowIso } from "@/lib/ids";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { encounterRowToEncounter, encounterToRow, patientRowToPatient, patientToRow } from "@/lib/supabaseMappers";
 
 const IV_SITES = [
   { value: "", label: "Select site..." },
@@ -210,11 +212,53 @@ export default function EncounterPage() {
   const [cancellationReasonInput, setCancellationReasonInput] = useState("");
 
   useEffect(() => {
-    loadEncounter();
+    void loadEncounter();
   }, [encounterId]);
 
-  function loadEncounter() {
+  async function loadEncounter() {
     try {
+      if (isSupabaseConfigured() && supabase) {
+        const { data: row, error } = await supabase
+          .from("encounters")
+          .select("*")
+          .eq("id", encounterId)
+          .single();
+        if (error || !row) {
+          setIsLoading(false);
+          return;
+        }
+        const found = encounterRowToEncounter(row);
+        setEncounter(found);
+        setStatus(found.status ?? "in_progress");
+        setIntake({
+          chiefComplaint: found.intake?.chiefComplaint ?? "",
+          historyOfPresentIllness: found.intake?.historyOfPresentIllness ?? "",
+        });
+        setVitals(found.vitals ?? []);
+        setIvAccess({
+          site: found.ivAccess?.site ?? "",
+          gauge: found.ivAccess?.gauge ?? "",
+          dateTime: found.ivAccess?.dateTime ?? "",
+          notes: found.ivAccess?.notes ?? "",
+        });
+        const admin = found.administration;
+        setAdministration(admin ? { ...defaultAdministration, ...admin } : defaultAdministration);
+        setProviderNote(found.providerNote?.content ?? "");
+        setDischarge(found.discharge?.instructions ?? "");
+        setAddenda(found.addenda ?? []);
+        setNursingSignedBy(found.nursingSignedBy ?? "");
+        setProviderSignedBy(found.providerSignedBy ?? "");
+
+        const { data: patientRow } = await supabase
+          .from("patients")
+          .select("*")
+          .eq("id", found.patientId)
+          .single();
+        setPatient(patientRow ? patientRowToPatient(patientRow) : null);
+        setIsLoading(false);
+        return;
+      }
+
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (stored) {
         const encounters: Encounter[] = JSON.parse(stored);
@@ -256,30 +300,42 @@ export default function EncounterPage() {
 
   function saveEncounter(updates: Partial<Encounter> = {}) {
     if (!encounter) return;
+    const safeUpdates = { ...updates };
+    if (safeUpdates.administration) {
+      safeUpdates.administration = normalizeAdministration(safeUpdates.administration);
+    }
+    const adminForEncounter = normalizeAdministration(administration);
+    const merged: Encounter = {
+      ...encounter,
+      updatedAt: nowIso(),
+      intake: { ...encounter.intake, ...intake },
+      vitals,
+      ivAccess,
+      administration: adminForEncounter,
+      providerNote: { content: providerNote },
+      discharge: { instructions: discharge },
+      addenda,
+      status,
+      nursingSignedBy: encounter.nursingSignedBy ?? nursingSignedBy,
+      providerSignedBy: encounter.providerSignedBy ?? providerSignedBy,
+      ...safeUpdates,
+    };
+
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("encounters")
+        .upsert(encounterToRow(merged), { onConflict: "id" })
+        .then(({ error }) => {
+          if (error) console.error("Error saving encounter to Supabase:", error);
+          else setEncounter(merged);
+        });
+      return;
+    }
+
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (!stored) return;
       const encounters: Encounter[] = JSON.parse(stored);
-      const safeUpdates = { ...updates };
-      if (safeUpdates.administration) {
-        safeUpdates.administration = normalizeAdministration(safeUpdates.administration);
-      }
-      const adminForEncounter = normalizeAdministration(administration);
-      const merged: Encounter = {
-        ...encounter,
-        updatedAt: nowIso(),
-        intake: { ...encounter.intake, ...intake },
-        vitals,
-        ivAccess,
-        administration: adminForEncounter,
-        providerNote: { content: providerNote },
-        discharge: { instructions: discharge },
-        addenda,
-        status,
-        nursingSignedBy: encounter.nursingSignedBy ?? nursingSignedBy,
-        providerSignedBy: encounter.providerSignedBy ?? providerSignedBy,
-        ...safeUpdates,
-      };
       const next = encounters.map((e) => (e.id === encounter.id ? merged : e));
       localStorage.setItem(STORAGE_KEYS.encounters, JSON.stringify(next));
       setEncounter(merged);
@@ -289,6 +345,16 @@ export default function EncounterPage() {
   }
 
   function savePatient(updated: Patient) {
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("patients")
+        .upsert(patientToRow(updated), { onConflict: "id" })
+        .then(({ error }) => {
+          if (error) console.error("Error saving patient to Supabase:", error);
+          else setPatient(updated);
+        });
+      return;
+    }
     const stored = localStorage.getItem(STORAGE_KEYS.patients);
     if (!stored) return;
     const patients: Patient[] = JSON.parse(stored);

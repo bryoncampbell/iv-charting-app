@@ -8,6 +8,8 @@ import { logAudit } from "@/lib/audit";
 import { parseLocalDate } from "@/lib/dates";
 import { newId, nowIso } from "@/lib/ids";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { encounterRowToEncounter, encounterToRow, patientRowToPatient } from "@/lib/supabaseMappers";
 
 /** Same pricing as encounter order request — used when encounter.revenue was not persisted */
 const ORDER_PRICING = {
@@ -75,6 +77,35 @@ export default function VisitSummaryPage() {
   const [newAddendum, setNewAddendum] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+    if (isSupabaseConfigured() && supabase) {
+      (async () => {
+        const { data: row, error } = await supabase
+          .from("encounters")
+          .select("*")
+          .eq("id", encounterId)
+          .single();
+        if (cancelled || error || !row) {
+          setIsLoading(false);
+          return;
+        }
+        const found = encounterRowToEncounter(row);
+        setEncounter(found);
+        setAddenda(found.addenda ?? []);
+        if (summaryViewLogged.current !== encounterId) {
+          summaryViewLogged.current = encounterId;
+          logAudit("encounter.summary.view", "encounter", encounterId, found.patientName ?? undefined);
+        }
+        const { data: patientRow } = await supabase
+          .from("patients")
+          .select("*")
+          .eq("id", found.patientId)
+          .single();
+        if (!cancelled && patientRow) setPatient(patientRowToPatient(patientRow));
+        setIsLoading(false);
+      })().catch(() => setIsLoading(false));
+      return () => { cancelled = true; };
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (stored) {
@@ -102,11 +133,21 @@ export default function VisitSummaryPage() {
 
   function saveEncounterAddenda(nextAddenda: { id: string; createdAt: string; authorName: string; text: string }[]) {
     if (!encounter) return;
+    const merged: Encounter = { ...encounter, updatedAt: nowIso(), addenda: nextAddenda };
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("encounters")
+        .upsert(encounterToRow(merged), { onConflict: "id" })
+        .then(({ error }) => {
+          if (error) console.error("Error saving addenda to Supabase:", error);
+          else setEncounter(merged);
+        });
+      return;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (!stored) return;
       const encounters: Encounter[] = JSON.parse(stored);
-      const merged: Encounter = { ...encounter, updatedAt: nowIso(), addenda: nextAddenda };
       const next = encounters.map((e) => (e.id === encounter.id ? merged : e));
       localStorage.setItem(STORAGE_KEYS.encounters, JSON.stringify(next));
       setEncounter(merged);

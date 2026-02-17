@@ -17,6 +17,8 @@ import { logAudit } from "@/lib/audit";
 import { newId, nowIso } from "@/lib/ids";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { patientRowToPatient, patientToRow, encounterRowToEncounter } from "@/lib/supabaseMappers";
 
 // US states for address dropdown (50 states + DC)
 const US_STATES = [
@@ -117,11 +119,35 @@ export default function PatientProfilePage() {
   const lastViewedPatientId = useRef<string | null>(null);
 
   useEffect(() => {
-    loadPatient();
+    void loadPatient();
   }, [patientId]);
 
   useEffect(() => {
     if (!patientId) return;
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("encounters")
+        .select("*")
+        .eq("patient_id", patientId)
+        .order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (error) {
+            setRecentVisits([]);
+            return;
+          }
+          const encounters = (data ?? []).map((row) => encounterRowToEncounter(row));
+          const oneYearAgo = new Date();
+          oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+          const withinYear = encounters.filter((e) => {
+            const dateStr = e.date ?? (e.createdAt ? e.createdAt.slice(0, 10) : "");
+            if (!dateStr) return false;
+            const visitDate = parseLocalDate(dateStr);
+            return visitDate >= oneYearAgo;
+          });
+          setRecentVisits(withinYear);
+        });
+      return;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (!stored) {
@@ -149,8 +175,25 @@ export default function PatientProfilePage() {
     }
   }, [patientId]);
 
-  const loadPatient = () => {
+  const loadPatient = async () => {
     try {
+      if (isSupabaseConfigured() && supabase) {
+        const { data: row, error } = await supabase
+          .from("patients")
+          .select("*")
+          .eq("id", patientId)
+          .single();
+        if (!error && row) {
+          const foundPatient = patientRowToPatient(row);
+          setPatient(foundPatient);
+          if (lastViewedPatientId.current !== patientId) {
+            lastViewedPatientId.current = patientId;
+            logAudit("patient.view", "patient", patientId, getPatientDisplayName(foundPatient));
+          }
+        }
+        setIsLoading(false);
+        return;
+      }
       const stored = localStorage.getItem(STORAGE_KEYS.patients);
       if (stored) {
         const patients: Patient[] = JSON.parse(stored);
@@ -171,6 +214,15 @@ export default function PatientProfilePage() {
   };
 
   const savePatient = (updatedPatient: Patient) => {
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("patients")
+        .upsert(patientToRow(updatedPatient), { onConflict: "id" })
+        .then(({ error }) => {
+          if (error) console.error("Error saving patient to Supabase:", error);
+        });
+      return;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.patients);
       if (stored) {

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type { Encounter } from "@/types";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { encounterRowToEncounter } from "@/lib/supabaseMappers";
 
 type DateFilter = "today" | "last7days" | "all";
 
@@ -14,7 +16,22 @@ export default function VisitsPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("last7days");
 
   useEffect(() => {
-    const loadVisits = () => {
+    const loadVisits = async () => {
+      if (isSupabaseConfigured() && supabase) {
+        const { data, error } = await supabase
+          .from("encounters")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) {
+          console.error("Supabase encounters load error:", error);
+          setAllVisits([]);
+          return;
+        }
+        const encounters: Encounter[] = (data ?? []).map((row) => encounterRowToEncounter(row));
+        setAllVisits(encounters);
+        return;
+      }
+
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (!stored) {
         setAllVisits([]);
@@ -34,13 +51,11 @@ export default function VisitsPage() {
       }
     };
 
-    // Initial load
     loadVisits();
 
-    // Listen for changes to encounters in localStorage (e.g. status updates in other tabs)
     const handleStorage = (event: StorageEvent) => {
       if (event.key === STORAGE_KEYS.encounters) {
-        loadVisits();
+        void loadVisits();
       }
     };
     window.addEventListener("storage", handleStorage);

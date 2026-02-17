@@ -1,10 +1,11 @@
 /**
  * Audit logging utility for view, edit, sign, and print actions.
- * Logs are stored in localStorage via STORAGE_KEYS.auditLog.
+ * When Supabase is configured, logs are stored in audit_log; otherwise localStorage.
  */
 
 import type { AuditEvent, AuditAction, AuditEntityType } from "@/types/audit";
 import { STORAGE_KEYS, getItem, setItem } from "./storage";
+import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
 const MAX_LOG_ENTRIES = 2000;
 
@@ -30,8 +31,26 @@ function saveLog(entries: AuditEvent[]) {
 
 /**
  * Read audit log (newest-first order). Use for admin Audit Log page.
+ * Returns a Promise so the Audit page can load from Supabase when configured.
  */
-export function getAuditLog(): AuditEvent[] {
+export async function getAuditLog(): Promise<AuditEvent[]> {
+  if (typeof window !== "undefined" && isSupabaseConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from("audit_log")
+      .select("timestamp, action, entity_type, entity_id, details")
+      .order("timestamp", { ascending: false });
+    if (error) {
+      console.error("Error loading audit log from Supabase:", error);
+      return [];
+    }
+    return (data ?? []).map((row) => ({
+      timestamp: row.timestamp,
+      action: row.action as AuditEvent["action"],
+      entityType: row.entity_type as AuditEntityType,
+      entityId: row.entity_id,
+      details: row.details ?? undefined,
+    }));
+  }
   const log = getLog();
   return [...log].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -40,6 +59,7 @@ export function getAuditLog(): AuditEvent[] {
 
 /**
  * Log an audit event. Safe to call from any component.
+ * When Supabase is configured, writes to audit_log; otherwise localStorage.
  */
 export function logAudit(
   action: AuditAction,
@@ -47,13 +67,23 @@ export function logAudit(
   entityId: string,
   details?: string
 ): void {
-  const entry: AuditEvent = {
-    timestamp: new Date().toISOString(),
-    action,
-    entityType,
-    entityId,
-    details,
-  };
+  const timestamp = new Date().toISOString();
+  const entry: AuditEvent = { timestamp, action, entityType, entityId, details };
+  if (typeof window !== "undefined" && isSupabaseConfigured() && supabase) {
+    supabase
+      .from("audit_log")
+      .insert({
+        timestamp,
+        action,
+        entity_type: entityType,
+        entity_id: entityId,
+        details: details ?? null,
+      })
+      .then(({ error }) => {
+        if (error) console.error("Error writing audit log to Supabase:", error);
+      });
+    return;
+  }
   const log = getLog();
   log.push(entry);
   saveLog(log);

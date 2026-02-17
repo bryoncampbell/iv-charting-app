@@ -8,6 +8,8 @@ import { logAudit } from "@/lib/audit";
 import { newId } from "@/lib/ids";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { patientRowToPatient, patientToRow } from "@/lib/supabaseMappers";
 
 // Format phone number to (XXX) XXX-XXXX
 const formatPhoneNumber = (value: string): string => {
@@ -38,8 +40,30 @@ export default function PatientsPage() {
     phone: "",
   });
 
-  // Load patients from localStorage on mount (no auto-seed; use Dashboard "Reset demo data" for sample data)
+  // Load patients on mount: Supabase when configured, else localStorage
   useEffect(() => {
+    let cancelled = false;
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (cancelled || error) {
+            if (error) console.error("Error loading patients from Supabase:", error);
+            if (!cancelled) setPatients([]);
+            return;
+          }
+          const list = (data ?? []).map((row) => patientRowToPatient(row));
+          const formatted = list.map((p) => ({
+            ...p,
+            phone: p.phone ? formatPhoneNumber(normalizePhoneNumber(p.phone)) : undefined,
+            allergies: p.allergies ?? [],
+          }));
+          if (!cancelled) setPatients(formatted);
+        });
+      return () => { cancelled = true; };
+    }
     const stored = localStorage.getItem(STORAGE_KEYS.patients);
     if (stored) {
       try {
@@ -153,6 +177,22 @@ export default function PatientsPage() {
       phone: formatPhoneNumber(normalizedPhone),
       allergies: [],
     };
+
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("patients")
+        .insert(patientToRow(newPatient))
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error creating patient in Supabase:", error);
+            return;
+          }
+          setPatients((prev) => [...prev, newPatient]);
+          logAudit("patient.create", "patient", newPatient.id, getPatientDisplayName(newPatient));
+          handleCloseModal();
+        });
+      return;
+    }
 
     const updatedPatients = [...patients, newPatient];
     setPatients(updatedPatients);

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import type { Encounter, Patient } from "@/types";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { encounterRowToEncounter } from "@/lib/supabaseMappers";
 import ResetDemoDataButton from "@/components/ResetDemoDataButton";
 import LoadSampleDataButton from "@/components/LoadSampleDataButton";
 
@@ -22,19 +24,13 @@ export default function DashboardPage() {
   const [recentEncounters, setRecentEncounters] = useState<Encounter[]>([]);
 
   const loadStats = useCallback(() => {
-    try {
-      const todayStr = getLocalDateString(new Date());
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - 7);
-      const weekStartStr = getLocalDateString(weekStart);
+    const todayStr = getLocalDateString(new Date());
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - 7);
+    const weekStartStr = getLocalDateString(weekStart);
 
-      const patientsRaw = localStorage.getItem(STORAGE_KEYS.patients);
-      const patients: Patient[] = patientsRaw ? JSON.parse(patientsRaw) : [];
-      setTotalPatients(Array.isArray(patients) ? patients.length : 0);
-
-      const encountersRaw = localStorage.getItem(STORAGE_KEYS.encounters);
-      const encounters: Encounter[] = encountersRaw ? JSON.parse(encountersRaw) : [];
-
+    function applyStats(patients: Patient[], encounters: Encounter[]) {
+      setTotalPatients(patients.length);
       let today = 0;
       let week = 0;
       let rev = 0;
@@ -47,13 +43,51 @@ export default function DashboardPage() {
       setTodayVisits(today);
       setWeekVisits(week);
       setRevenue(rev);
-
       const sorted = [...encounters].sort(
         (a, b) =>
           new Date(b.createdAt ?? b.date ?? 0).getTime() -
           new Date(a.createdAt ?? a.date ?? 0).getTime()
       );
       setRecentEncounters(sorted.slice(0, 5));
+    }
+
+    if (isSupabaseConfigured() && supabase) {
+      Promise.all([
+        supabase.from("patients").select("id"),
+        supabase.from("encounters").select("*").order("created_at", { ascending: false }),
+      ])
+        .then(([patientsRes, encountersRes]) => {
+          const count = patientsRes.data?.length ?? 0;
+          const encounters: Encounter[] = (encountersRes.data ?? []).map((row) => encounterRowToEncounter(row));
+          setTotalPatients(count);
+          let today = 0;
+          let week = 0;
+          let rev = 0;
+          for (const e of encounters) {
+            const dateStr = e.date ?? (e.createdAt ? e.createdAt.slice(0, 10) : "");
+            if (dateStr === todayStr) today += 1;
+            if (dateStr >= weekStartStr) week += 1;
+            rev += Number(e.revenue) || 0;
+          }
+          setTodayVisits(today);
+          setWeekVisits(week);
+          setRevenue(rev);
+          const sorted = [...encounters].sort(
+            (a, b) =>
+              new Date(b.createdAt ?? b.date ?? 0).getTime() -
+              new Date(a.createdAt ?? a.date ?? 0).getTime()
+          );
+          setRecentEncounters(sorted.slice(0, 5));
+        })
+        .catch((e) => console.error("Error loading dashboard stats:", e));
+      return;
+    }
+    try {
+      const patientsRaw = localStorage.getItem(STORAGE_KEYS.patients);
+      const patients: Patient[] = patientsRaw ? JSON.parse(patientsRaw) : [];
+      const encountersRaw = localStorage.getItem(STORAGE_KEYS.encounters);
+      const encounters: Encounter[] = encountersRaw ? JSON.parse(encountersRaw) : [];
+      applyStats(Array.isArray(patients) ? patients : [], encounters);
     } catch (e) {
       console.error("Error loading dashboard stats:", e);
     }

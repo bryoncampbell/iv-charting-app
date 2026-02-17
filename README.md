@@ -18,7 +18,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser.
+Open [1 ](http://localhost:3000) with your browser.
 
 ### Optional environment variables
 
@@ -59,16 +59,21 @@ Result: The app is publicly reachable, but each browser still has its **own** da
 ### Phase 2 – Add Supabase (shared DB, simple auth)
 
 - **Goal:** Shared data across users/locations using Supabase (Postgres + auth + optional realtime).
-- **Steps (high level):**
-  - Create a Supabase project and add to `.env.local`:
-    - `NEXT_PUBLIC_SUPABASE_URL`
-    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - Create tables:
-    - `patients` – matches the `Patient` type (names, DOB, phones, address, allergies, etc.).
-    - `encounters` – matches the `Encounter` type (intake, vitals, IV access, administration, status, revenue, etc.).
-    - `audit_log` – matches existing audit events.
-  - Add `@supabase/supabase-js` and `src/lib/supabaseClient.ts`.
-  - **First screen to migrate:** `visits/page.tsx`
+
+**Setup (do this once):**
+
+1. **Env vars** – Copy `.env.example` to `.env.local` and set:
+   - `NEXT_PUBLIC_SUPABASE_URL` (Supabase Dashboard → Project Settings → API → Project URL)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same page → anon public key)
+   - Add the same two vars in Vercel → Project → Settings → Environment Variables.
+
+2. **Tables** – In Supabase Dashboard → **SQL Editor** → New query, paste and run the contents of **`supabase/schema.sql`** in this repo. That creates `patients`, `encounters`, and `audit_log`.
+
+3. **Client** – The app already has `@supabase/supabase-js` and `src/lib/supabaseClient.ts`; no extra install needed.
+
+**Migration (code):**
+
+- **First screen to migrate:** `visits/page.tsx`
     - Replace `localStorage.getItem(STORAGE_KEYS.encounters)` with `supabase.from("encounters").select("*")`.
     - Show visits list from Supabase instead of localStorage.
   - Then migrate:

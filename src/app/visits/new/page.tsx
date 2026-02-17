@@ -9,6 +9,8 @@ import { logAudit } from "@/lib/audit";
 import { newId, nowIso } from "@/lib/ids";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { patientRowToPatient, encounterToRow } from "@/lib/supabaseMappers";
 
 const formatPhoneNumber = (value: string): string => {
   const digits = value.replace(/\D/g, "");
@@ -33,6 +35,26 @@ export default function NewVisitPage() {
   });
 
   useEffect(() => {
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (error) {
+            setPatients([]);
+            return;
+          }
+          const list = (data ?? []).map((row) => patientRowToPatient(row));
+          const formatted = list.map((p) => ({
+            ...p,
+            phone: p.phone ? formatPhoneNumber(normalizePhoneNumber(p.phone)) : undefined,
+            allergies: p.allergies ?? [],
+          }));
+          setPatients(formatted);
+        });
+      return;
+    }
     const stored = localStorage.getItem(STORAGE_KEYS.patients);
     if (stored) {
       try {
@@ -108,6 +130,20 @@ export default function NewVisitPage() {
       time: createdDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
       addenda: [],
     };
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("encounters")
+        .insert(encounterToRow(encounter))
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error creating encounter in Supabase:", error);
+            return;
+          }
+          logAudit("encounter.create", "encounter", encounter.id, getPatientDisplayName(patient));
+          router.push(`/encounters/${encounter.id}`);
+        });
+      return;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       const encounters: Encounter[] = stored ? JSON.parse(stored) : [];

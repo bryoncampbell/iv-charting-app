@@ -47,12 +47,18 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setEvents(getAuditLog());
-    setLoading(false);
+    getAuditLog().then((log) => {
+      setEvents(log);
+      setLoading(false);
+    });
   }, []);
 
   const refresh = () => {
-    setEvents(getAuditLog());
+    setLoading(true);
+    getAuditLog().then((log) => {
+      setEvents(log);
+      setLoading(false);
+    });
   };
 
   return (
