@@ -213,7 +213,12 @@ export default function EncounterPage() {
             historyOfPresentIllness: found.intake?.historyOfPresentIllness ?? "",
           });
           setVitals(found.vitals ?? []);
-          setIvAccess(found.ivAccess ?? { site: "", gauge: "", dateTime: "", notes: "" });
+          setIvAccess({
+            site: found.ivAccess?.site ?? "",
+            gauge: found.ivAccess?.gauge ?? "",
+            dateTime: found.ivAccess?.dateTime ?? "",
+            notes: found.ivAccess?.notes ?? "",
+          });
           const admin = found.administration;
           setAdministration(admin ? { ...defaultAdministration, ...admin } : defaultAdministration);
           setProviderNote(found.providerNote?.content ?? "");
