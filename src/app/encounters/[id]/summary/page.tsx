@@ -84,7 +84,7 @@ export default function VisitSummaryPage() {
           .from("encounters")
           .select("*")
           .eq("id", encounterId)
-          .single();
+          .maybeSingle();
         if (cancelled || error || !row) {
           setIsLoading(false);
           return;
@@ -100,7 +100,7 @@ export default function VisitSummaryPage() {
           .from("patients")
           .select("*")
           .eq("id", found.patientId)
-          .single();
+          .maybeSingle();
         if (!cancelled && patientRow) setPatient(patientRowToPatient(patientRow));
         setIsLoading(false);
       })().catch(() => setIsLoading(false));

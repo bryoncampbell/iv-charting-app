@@ -182,7 +182,7 @@ export default function PatientProfilePage() {
           .from("patients")
           .select("*")
           .eq("id", patientId)
-          .single();
+          .maybeSingle();
         if (!error && row) {
           const foundPatient = patientRowToPatient(row);
           setPatient(foundPatient);

@@ -224,7 +224,7 @@ export default function EncounterPage() {
           .from("encounters")
           .select("*")
           .eq("id", encounterId)
-          .single();
+          .maybeSingle();
         if (error || !row) {
           setLoadError(error?.message ?? "No encounter returned. If you just started this visit, check Supabase: Table Editor → encounters → RLS. Add a policy allowing SELECT for the anon role.");
           setIsLoading(false);
@@ -256,7 +256,7 @@ export default function EncounterPage() {
           .from("patients")
           .select("*")
           .eq("id", found.patientId)
-          .single();
+          .maybeSingle();
         setPatient(patientRow ? patientRowToPatient(patientRow) : null);
         setIsLoading(false);
         return;
