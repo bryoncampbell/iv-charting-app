@@ -372,7 +372,8 @@ export default function EncounterPage() {
   const handleAdministrationChange = (field: string, value: string) => {
     const updated = { ...administration, [field]: value };
     setAdministration(updated);
-    setTimeout(() => saveEncounter({ administration: normalizeAdministration(updated) }), 300);
+    const adminForSave = normalizeAdministration(updated as Partial<Omit<Administration, "toleranceOption">> & { toleranceOption?: string });
+    setTimeout(() => saveEncounter({ administration: adminForSave }), 300);
   };
   const setComplicationsNone = () => {
     handleAdministrationChange("complications", "None");
