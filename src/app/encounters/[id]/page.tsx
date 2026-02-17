@@ -216,7 +216,7 @@ export default function EncounterPage() {
     void loadEncounter();
   }, [encounterId]);
 
-  async function loadEncounter() {
+  async function loadEncounter(retry = false) {
     setLoadError(null);
     try {
       if (isSupabaseConfigured() && supabase) {
@@ -226,6 +226,10 @@ export default function EncounterPage() {
           .eq("id", encounterId)
           .maybeSingle();
         if (error || !row) {
+          if (!retry && !error) {
+            await new Promise((r) => setTimeout(r, 1500));
+            return loadEncounter(true);
+          }
           setLoadError(error?.message ?? "No encounter returned. Fix: In Supabase Dashboard go to SQL Editor → New query, paste and run the contents of supabase/rls-policies.sql from this repo (allows anon to read/write encounters).");
           setIsLoading(false);
           return;

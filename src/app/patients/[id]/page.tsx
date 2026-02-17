@@ -18,7 +18,7 @@ import { newId, nowIso } from "@/lib/ids";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { patientRowToPatient, patientToRow, encounterRowToEncounter } from "@/lib/supabaseMappers";
+import { patientRowToPatient, patientToRow, encounterRowToEncounter, encounterToRow } from "@/lib/supabaseMappers";
 
 // US states for address dropdown (50 states + DC)
 const US_STATES = [
@@ -400,6 +400,22 @@ export default function PatientProfilePage() {
       time: createdDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
       addenda: [],
     };
+
+    if (isSupabaseConfigured() && supabase) {
+      supabase
+        .from("encounters")
+        .insert(encounterToRow(encounter))
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error creating encounter in Supabase:", error);
+            alert(`Could not start visit: ${error.message}\n\nCode: ${error.code}. Check Supabase: Table Editor → encounters, and RLS policies.`);
+            return;
+          }
+          logAudit("encounter.create", "encounter", encounter.id, getPatientDisplayName(patient));
+          setTimeout(() => router.push(`/encounters/${encounter.id}`), 600);
+        });
+      return;
+    }
 
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);

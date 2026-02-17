@@ -141,7 +141,8 @@ export default function NewVisitPage() {
             return;
           }
           logAudit("encounter.create", "encounter", encounter.id, getPatientDisplayName(patient));
-          router.push(`/encounters/${encounter.id}`);
+          // Brief delay so DB commit is visible before the next page loads
+          setTimeout(() => router.push(`/encounters/${encounter.id}`), 600);
         });
       return;
     }
