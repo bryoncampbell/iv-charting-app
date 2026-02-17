@@ -325,13 +325,15 @@ export default function EncounterPage() {
     };
 
     if (isSupabaseConfigured() && supabase) {
-      return supabase
-        .from("encounters")
-        .upsert(encounterToRow(merged), { onConflict: "id" })
-        .then(({ error }) => {
-          if (error) console.error("Error saving encounter to Supabase:", error);
-          else setEncounter(merged);
-        });
+      return Promise.resolve(
+        supabase
+          .from("encounters")
+          .upsert(encounterToRow(merged), { onConflict: "id" })
+          .then(({ error }) => {
+            if (error) console.error("Error saving encounter to Supabase:", error);
+            else setEncounter(merged);
+          })
+      );
     }
 
     try {
