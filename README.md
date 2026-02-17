@@ -86,10 +86,8 @@ At the end of Phase 2, **localStorage is no longer the source of truth** for pat
 ### Phase 3 – Realtime visit status (optional, via Supabase Realtime)
 
 - **Goal:** When one user updates a visit (status, order approved, infusion started, etc.), other users’ `Visits` page updates automatically.
-- **Steps (high level):**
-  - Enable Realtime on the `encounters` table in Supabase.
-  - On `visits/page.tsx`, subscribe to changes:
-    - On any insert/update/delete, re‑fetch encounters from Supabase (or apply the delta).
+- **One-time setup:** In Supabase → **SQL Editor** → New query, run the contents of **`supabase/realtime-enable.sql`** (adds `encounters` to the Realtime publication). Or in **Database → Replication**, enable Realtime for the `encounters` table.
+- **App:** The Visits page subscribes to `postgres_changes` on `encounters` and refetches the list on any insert/update/delete, so the list stays in sync across tabs and users.
 
 ### HIPAA note
 

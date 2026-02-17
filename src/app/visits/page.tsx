@@ -54,6 +54,19 @@ export default function VisitsPage() {
 
     loadVisits();
 
+    // Realtime: refetch when encounters change (Phase 3)
+    let channel: { unsubscribe: () => void } | null = null;
+    if (isSupabaseConfigured() && supabase) {
+      channel = supabase
+        .channel("visits-encounters-changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "encounters" },
+          () => void loadVisits()
+        )
+        .subscribe();
+    }
+
     const handleStorage = (event: StorageEvent) => {
       if (event.key === STORAGE_KEYS.encounters) {
         void loadVisits();
@@ -63,6 +76,7 @@ export default function VisitsPage() {
     window.addEventListener("storage", handleStorage);
     window.addEventListener("focus", handleFocus);
     return () => {
+      if (channel) channel.unsubscribe();
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("focus", handleFocus);
     };
