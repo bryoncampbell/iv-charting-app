@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       encounter,
       patient: patient || null,
     }));
-    const token = createShareToken(payload);
+    const token = await createShareToken(payload);
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
     const url = `${baseUrl}/summary/${token}`;
 

@@ -1,14 +1,13 @@
 /**
- * Store for shared visit summaries. Uses file system so the link works
- * when opened later or after server restart (single-server / self-hosted).
- * Falls back to in-memory if fs is unavailable.
- * For serverless (e.g. Vercel with multiple instances), use Redis/KV so
- * the same token is available across instances.
+ * Store for shared visit summaries.
+ * When Supabase is configured, uses share_summaries table so links work across
+ * serverless instances (Vercel). Otherwise uses file system or in-memory.
  */
 
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const TOKEN_BYTES = 24;
@@ -49,10 +48,19 @@ function getFilePath(token: string): string | null {
   return path.join(dir, `${token}.json`);
 }
 
-export function createShareToken(payload: Record<string, unknown>): string {
+export async function createShareToken(payload: Record<string, unknown>): Promise<string> {
   const token = generateToken();
-  memoryStore.set(token, payload as Record<string, any>);
 
+  if (isSupabaseConfigured() && supabase) {
+    const { error } = await supabase.from("share_summaries").insert({ token, payload });
+    if (error) {
+      console.error("share-store: Supabase insert failed:", error);
+      throw new Error("Could not create share link");
+    }
+    return token;
+  }
+
+  memoryStore.set(token, payload as Record<string, any>);
   const filePath = getFilePath(token);
   if (filePath) {
     try {
@@ -61,11 +69,20 @@ export function createShareToken(payload: Record<string, unknown>): string {
       // Keep in-memory only
     }
   }
-
   return token;
 }
 
-export function getShareSummary(token: string): Record<string, unknown> | null {
+export async function getShareSummary(token: string): Promise<Record<string, unknown> | null> {
+  if (isSupabaseConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from("share_summaries")
+      .select("payload")
+      .eq("token", token)
+      .maybeSingle();
+    if (error || !data?.payload) return null;
+    return data.payload as Record<string, unknown>;
+  }
+
   const filePath = getFilePath(token);
   if (filePath) {
     try {

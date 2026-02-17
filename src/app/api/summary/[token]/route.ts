@@ -9,7 +9,7 @@ export async function GET(
   if (!token) {
     return NextResponse.json({ error: "Token required" }, { status: 400 });
   }
-  const data = getShareSummary(token);
+  const data = await getShareSummary(token);
   if (!data) {
     return NextResponse.json({ error: "Summary not found or link expired" }, { status: 404 });
   }

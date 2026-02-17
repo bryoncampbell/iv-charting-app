@@ -35,7 +35,7 @@ Create a `.env.local` file in the project root for local development (see [Next.
 
 - **Patients, encounters, audit log** – Currently stored in the browser’s **localStorage** (no shared server DB yet). Use the Dashboard “Reset demo data” to repopulate sample data.  
   This is fine for local development and demos, but **not suitable for PHI / HIPAA**.
-- **Shared visit summaries** – Stored in a **file-based store** on the server (directory `.data/share-summaries`, or `os.tmpdir()` if that directory isn’t writable). Share links are valid until the server process restarts or the file is removed; on serverless (e.g. Vercel) you’ll need a shared store (e.g. Vercel KV, Redis) for links to work across instances.
+- **Shared visit summaries** – When Supabase is configured, share links are stored in the **`share_summaries`** table (run `supabase/share-summaries.sql` in Supabase SQL Editor once) so “Share link” / “Text link” work across Vercel serverless instances. Otherwise a file-based store is used (single-server only).
 
 ---
 
