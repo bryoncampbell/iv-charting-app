@@ -210,12 +210,14 @@ export default function EncounterPage() {
   const [declineReasonInput, setDeclineReasonInput] = useState("");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellationReasonInput, setCancellationReasonInput] = useState("");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadEncounter();
   }, [encounterId]);
 
   async function loadEncounter() {
+    setLoadError(null);
     try {
       if (isSupabaseConfigured() && supabase) {
         const { data: row, error } = await supabase
@@ -224,6 +226,7 @@ export default function EncounterPage() {
           .eq("id", encounterId)
           .single();
         if (error || !row) {
+          setLoadError(error?.message ?? "No encounter returned. If you just started this visit, check Supabase: Table Editor → encounters → RLS. Add a policy allowing SELECT for the anon role.");
           setIsLoading(false);
           return;
         }
@@ -672,8 +675,13 @@ export default function EncounterPage() {
   if (!encounter) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-        <div className="text-center">
+        <div className="text-center max-w-lg mx-auto">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Encounter not found</h1>
+          {loadError && (
+            <p className="mt-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded p-3">
+              {loadError}
+            </p>
+          )}
           <Link href="/visits" className="mt-4 inline-block text-blue-600 dark:text-blue-400">← Back to Visits</Link>
         </div>
       </div>

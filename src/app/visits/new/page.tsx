@@ -137,6 +137,7 @@ export default function NewVisitPage() {
         .then(({ error }) => {
           if (error) {
             console.error("Error creating encounter in Supabase:", error);
+            alert(`Could not start visit: ${error.message}\n\nCode: ${error.code}. Check Supabase: Table Editor → encounters, and RLS policies (allow INSERT for anon).`);
             return;
           }
           logAudit("encounter.create", "encounter", encounter.id, getPatientDisplayName(patient));
