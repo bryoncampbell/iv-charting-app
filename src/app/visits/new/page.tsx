@@ -10,7 +10,7 @@ import { newId, nowIso } from "@/lib/ids";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { patientRowToPatient, encounterToRow } from "@/lib/supabaseMappers";
+import { patientRowToPatient, patientToRow, encounterToRow } from "@/lib/supabaseMappers";
 
 const formatPhoneNumber = (value: string): string => {
   const digits = value.replace(/\D/g, "");
@@ -157,7 +157,7 @@ export default function NewVisitPage() {
     router.push(`/encounters/${encounter.id}`);
   }
 
-  const handleAddPatient = (e: React.FormEvent) => {
+  const handleAddPatient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.dob || !formData.phone) {
       alert("Please fill in all required fields.");
@@ -176,6 +176,23 @@ export default function NewVisitPage() {
       phone: formatPhoneNumber(norm),
       allergies: [],
     };
+
+    if (isSupabaseConfigured() && supabase) {
+      const { error } = await supabase.from("patients").insert(patientToRow(newPatient));
+      if (error) {
+        console.error("Error creating patient in Supabase:", error);
+        alert(`Could not add patient: ${error.message}`);
+        return;
+      }
+      setPatients((prev) => [...prev, newPatient]);
+      logAudit("patient.create", "patient", newPatient.id, getPatientDisplayName(newPatient));
+      setFormData({ firstName: "", lastName: "", dob: "", phone: "" });
+      setShowAddForm(false);
+      setSearchQuery("");
+      startVisit(newPatient);
+      return;
+    }
+
     const next = [...patients, newPatient];
     setPatients(next);
     savePatients(next);
@@ -183,7 +200,6 @@ export default function NewVisitPage() {
     setFormData({ firstName: "", lastName: "", dob: "", phone: "" });
     setShowAddForm(false);
     setSearchQuery("");
-    // Optionally start visit for the new patient
     startVisit(newPatient);
   };
 
