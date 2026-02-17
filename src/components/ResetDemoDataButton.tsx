@@ -7,10 +7,10 @@ const isDev = process.env.NODE_ENV === "development";
 export default function ResetDemoDataButton() {
   if (!isDev) return null;
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (typeof window === "undefined") return;
     if (!confirm("Reset all demo data? Patients, encounters, and audit log will be cleared.")) return;
-    resetDemoData();
+    await resetDemoData();
     window.location.href = "/dashboard";
   };
 

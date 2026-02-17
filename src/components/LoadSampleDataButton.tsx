@@ -3,10 +3,10 @@
 import { seedDemoDataForCustomer } from "@/lib/demo-data";
 
 export default function LoadSampleDataButton() {
-  const handleLoad = () => {
+  const handleLoad = async () => {
     if (typeof window === "undefined") return;
     if (!confirm("Load 40 sample patients and visits with varied vitals? This will replace current data.")) return;
-    seedDemoDataForCustomer();
+    await seedDemoDataForCustomer();
     window.location.href = "/dashboard";
   };
 

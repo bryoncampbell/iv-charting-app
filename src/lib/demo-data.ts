@@ -1,6 +1,7 @@
 /**
  * Demo data and reset utility for development.
  * Reset clears all data; seedDemoDataForCustomer() loads 40 patients + encounters with varied vitals for demos.
+ * When Supabase is configured, reset/seed operate on the DB; otherwise localStorage only.
  */
 
 import type {
@@ -17,6 +18,8 @@ import type {
 import { newId } from "./ids";
 import { logAudit } from "./audit";
 import { STORAGE_KEYS, setItem } from "./storage";
+import { supabase, isSupabaseConfigured } from "./supabaseClient";
+import { patientToRow, encounterToRow } from "./supabaseMappers";
 
 function allergy(id: string, allergen: string, reaction?: string): Allergy {
   return { id, allergen, reaction };
@@ -245,12 +248,34 @@ function getSeedEncountersForDemo(patients: Patient[]): Encounter[] {
 /**
  * Seed 40 patients and encounters with varied vitals for customer demo.
  * Call from "Load sample data" on the dashboard.
+ * When Supabase is configured, inserts into DB; otherwise localStorage only.
  */
-export function seedDemoDataForCustomer(): void {
+export async function seedDemoDataForCustomer(): Promise<void> {
   if (typeof window === "undefined") return;
+  const patients = getSeedPatientsForDemo();
+  const encounters = getSeedEncountersForDemo(patients);
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      await resetDemoData();
+      const { error: patientsError } = await supabase.from("patients").insert(patients.map(patientToRow));
+      if (patientsError) {
+        console.warn("Seed demo data (patients) failed:", patientsError);
+        return;
+      }
+      const { error: encountersError } = await supabase.from("encounters").insert(encounters.map(encounterToRow));
+      if (encountersError) {
+        console.warn("Seed demo data (encounters) failed:", encountersError);
+        return;
+      }
+      logAudit("demo_data.seed_customer", "system", "app", "Seeded 40 patients and encounters for customer demo");
+    } catch (e) {
+      console.warn("Seed demo data failed:", e);
+    }
+    return;
+  }
+
   try {
-    const patients = getSeedPatientsForDemo();
-    const encounters = getSeedEncountersForDemo(patients);
     setItem(STORAGE_KEYS.patients, patients);
     setItem(STORAGE_KEYS.encounters, encounters);
     setItem(STORAGE_KEYS.auditLog, []);
@@ -263,14 +288,26 @@ export function seedDemoDataForCustomer(): void {
 /**
  * Reset all demo data: clear patients, encounters, and audit log.
  * Call from developer-only "Reset Demo Data" button.
- * Use getDemoPatients() elsewhere if you need to seed sample data.
+ * When Supabase is configured, deletes from DB (encounters first, then patients, then audit_log); otherwise localStorage only.
  */
-export function resetDemoData(): void {
+export async function resetDemoData(): Promise<void> {
   if (typeof window === "undefined") return;
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      await supabase.from("audit_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("encounters").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("patients").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      logAudit("demo_data.reset", "system", "app", "Demo data reset");
+    } catch (e) {
+      console.warn("Reset demo data failed:", e);
+    }
+    return;
+  }
+
   const patients: Patient[] = [];
   const encounters: Encounter[] = [];
   const audit: unknown[] = [];
-
   try {
     setItem(STORAGE_KEYS.patients, patients);
     setItem(STORAGE_KEYS.encounters, encounters);
