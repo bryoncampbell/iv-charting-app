@@ -301,8 +301,8 @@ export default function EncounterPage() {
     setIsLoading(false);
   }
 
-  function saveEncounter(updates: Partial<Encounter> = {}) {
-    if (!encounter) return;
+  function saveEncounter(updates: Partial<Encounter> = {}): Promise<void> {
+    if (!encounter) return Promise.resolve();
     const safeUpdates = { ...updates };
     if (safeUpdates.administration) {
       safeUpdates.administration = normalizeAdministration(safeUpdates.administration);
@@ -325,25 +325,26 @@ export default function EncounterPage() {
     };
 
     if (isSupabaseConfigured() && supabase) {
-      supabase
+      return supabase
         .from("encounters")
         .upsert(encounterToRow(merged), { onConflict: "id" })
         .then(({ error }) => {
           if (error) console.error("Error saving encounter to Supabase:", error);
           else setEncounter(merged);
         });
-      return;
     }
 
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
-      if (!stored) return;
+      if (!stored) return Promise.resolve();
       const encounters: Encounter[] = JSON.parse(stored);
       const next = encounters.map((e) => (e.id === encounter.id ? merged : e));
       localStorage.setItem(STORAGE_KEYS.encounters, JSON.stringify(next));
       setEncounter(merged);
+      return Promise.resolve();
     } catch (e) {
       console.error("Error saving encounter:", e);
+      return Promise.resolve();
     }
   }
 
@@ -568,7 +569,7 @@ export default function EncounterPage() {
     router.push("/visits");
   };
 
-  const handleCancelVisit = () => {
+  const handleCancelVisit = async () => {
     const reason = cancellationReasonInput.trim();
     if (!reason) {
       setValidationErrors(["Please provide a reason for cancellation."]);
@@ -579,7 +580,7 @@ export default function EncounterPage() {
     setShowCancelModal(false);
     setCancellationReasonInput("");
     setValidationErrors([]);
-    saveEncounter({
+    await saveEncounter({
       status: "cancelled",
       cancelledAt: nowIso(),
       cancelledBy,

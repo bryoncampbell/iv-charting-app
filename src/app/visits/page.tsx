@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import type { Encounter } from "@/types";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
@@ -12,6 +12,7 @@ type DateFilter = "today" | "last7days" | "all";
 
 export default function VisitsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [allVisits, setAllVisits] = useState<Encounter[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>("last7days");
 
@@ -58,9 +59,14 @@ export default function VisitsPage() {
         void loadVisits();
       }
     };
+    const handleFocus = () => void loadVisits();
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [pathname]);
 
   // Filter visits by date range (use local date so YYYY-MM-DD doesn't shift to previous day)
   const visitsInRange = allVisits.filter((visit) => {
