@@ -11,7 +11,12 @@ export type AuditAction =
   | "encounter.summary.text_link"
   | "encounter.sign.nursing_complete"
   | "encounter.sign.provider_signed"
-  | "demo_data.reset";
+  | "encounter.decline_to_treat"
+  | "encounter.decline_acknowledged"
+  | "encounter.cancelled"
+  | "encounter.order_approved"
+  | "demo_data.reset"
+  | "demo_data.seed_customer";
 
 export type AuditEntityType = "patient" | "encounter" | "system";
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Encounter, Patient, Vital } from "@/types";
+import type { Administration, Encounter, Patient, Vital } from "@/types";
 import { getPatientDisplayName } from "@/types";
 import { logAudit } from "@/lib/audit";
 import { newId, nowIso } from "@/lib/ids";
@@ -78,6 +78,18 @@ const PRICING = {
   extraFluidFee: 20, // Extra 500 mL of Hydration
 } as const;
 const EXTRA_500_ML_OPTION = "Extra 500 mL of Hydration";
+
+/** Normalize administration for Encounter type (toleranceOption must be one of three literals or undefined). */
+function normalizeAdministration(admin: Partial<Omit<Administration, "toleranceOption">> & { toleranceOption?: string }): Administration {
+  const tol = admin.toleranceOption;
+  return {
+    ...admin,
+    toleranceOption:
+      tol === "tolerated_well" || tol === "tolerated_complications" || tol === "unable_to_tolerate"
+        ? tol
+        : undefined,
+  } as Administration;
+}
 
 /** Out-of-range thresholds for vital signs (red highlight) */
 function isSystolicOutOfRange(n: number): boolean {
@@ -181,6 +193,8 @@ export default function EncounterPage() {
     tolerance: "",
     orderApprovedAt: "",
     orderApprovedBy: "",
+    readyForDischargeAt: "",
+    readyForDischargeBy: "",
   };
   const [administration, setAdministration] = useState(defaultAdministration);
   const [providerNote, setProviderNote] = useState("");
@@ -246,14 +260,11 @@ export default function EncounterPage() {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (!stored) return;
       const encounters: Encounter[] = JSON.parse(stored);
-      const tol = administration.toleranceOption;
-      const adminForEncounter = {
-        ...administration,
-        toleranceOption:
-          tol === "tolerated_well" || tol === "tolerated_complications" || tol === "unable_to_tolerate"
-            ? tol
-            : undefined,
-      };
+      const safeUpdates = { ...updates };
+      if (safeUpdates.administration) {
+        safeUpdates.administration = normalizeAdministration(safeUpdates.administration);
+      }
+      const adminForEncounter = normalizeAdministration(administration);
       const merged: Encounter = {
         ...encounter,
         updatedAt: nowIso(),
@@ -267,7 +278,7 @@ export default function EncounterPage() {
         status,
         nursingSignedBy: encounter.nursingSignedBy ?? nursingSignedBy,
         providerSignedBy: encounter.providerSignedBy ?? providerSignedBy,
-        ...updates,
+        ...safeUpdates,
       };
       const next = encounters.map((e) => (e.id === encounter.id ? merged : e));
       localStorage.setItem(STORAGE_KEYS.encounters, JSON.stringify(next));
@@ -361,7 +372,7 @@ export default function EncounterPage() {
   const handleAdministrationChange = (field: string, value: string) => {
     const updated = { ...administration, [field]: value };
     setAdministration(updated);
-    setTimeout(() => saveEncounter({ administration: updated }), 300);
+    setTimeout(() => saveEncounter({ administration: normalizeAdministration(updated) }), 300);
   };
   const setComplicationsNone = () => {
     handleAdministrationChange("complications", "None");
@@ -519,7 +530,7 @@ export default function EncounterPage() {
     const approvedBy = providerName.trim() || "Provider";
     const updated = { ...administration, orderApprovedAt: nowIso(), orderApprovedBy: approvedBy };
     setAdministration(updated);
-    saveEncounter({ administration: updated, revenue: orderPricing.total });
+    saveEncounter({ administration: normalizeAdministration(updated), revenue: orderPricing.total });
     if (encounter) logAudit("encounter.order_approved", "encounter", encounter.id, undefined);
   };
 

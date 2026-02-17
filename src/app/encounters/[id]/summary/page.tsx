@@ -333,7 +333,7 @@ export default function VisitSummaryPage() {
                 </div>
                 <div className="text-right text-sm text-gray-600 dark:text-gray-400">
                   <p className="font-medium text-gray-900 dark:text-white">{encounter.patientName}</p>
-                  <p>{formatDate(encounter.date)} · {encounter.time ?? ""}</p>
+                  <p>{formatDate(encounter.date ?? encounter.createdAt?.slice(0, 10) ?? "")} · {encounter.time ?? ""}</p>
                 </div>
               </div>
             </div>

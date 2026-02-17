@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import type { Encounter, Patient, Administration } from "@/types";
+import type { Administration, Encounter, Patient, Vital } from "@/types";
 import { parseLocalDate } from "@/lib/dates";
 
 const ORDER_PRICING = { baseFee: 180, medicationFee: 30, extraFluidFee: 20 } as const;
@@ -169,9 +169,9 @@ export default function PublicSummaryPage() {
                   <tbody>
                     {[...encounter.vitals]
                       .sort((a, b) => new Date((a as { timestamp?: string }).timestamp ?? 0).getTime() - new Date((b as { timestamp?: string }).timestamp ?? 0).getTime())
-                      .map((v: Record<string, unknown>, i: number) => (
+                      .map((v: Vital, i: number) => (
                         <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
-                          <td className="py-1 text-gray-600 dark:text-gray-400">{(v.timestamp as string) ? formatDateTime(v.timestamp as string) : "—"}</td>
+                          <td className="py-1 text-gray-600 dark:text-gray-400">{v.timestamp ? formatDateTime(v.timestamp) : "—"}</td>
                           <td className="py-1">{String(v.bloodPressure ?? "—")}</td>
                           <td className="py-1">{String(v.heartRate ?? "—")}</td>
                           <td className="py-1">{String(v.temperature ?? "—")}</td>

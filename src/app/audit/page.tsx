@@ -32,7 +32,12 @@ function actionLabel(action: AuditEvent["action"]): string {
     "encounter.summary.text_link": "Text link to patient",
     "encounter.sign.nursing_complete": "Nursing complete",
     "encounter.sign.provider_signed": "Provider signed",
+    "encounter.decline_to_treat": "Decline to treat",
+    "encounter.decline_acknowledged": "Decline acknowledged",
+    "encounter.cancelled": "Visit cancelled",
+    "encounter.order_approved": "Order approved",
     "demo_data.reset": "Reset demo data",
+    "demo_data.seed_customer": "Seed customer demo data",
   };
   return labels[action] ?? action;
 }

@@ -25,8 +25,8 @@ export default function VisitsPage() {
         setAllVisits(
           encounters.sort(
             (a, b) =>
-              new Date(b.createdAt || b.date).getTime() -
-              new Date(a.createdAt || a.date).getTime()
+              new Date(b.createdAt ?? b.date ?? 0).getTime() -
+              new Date(a.createdAt ?? a.date ?? 0).getTime()
           )
         );
       } catch {
@@ -290,7 +290,7 @@ export default function VisitsPage() {
                         {visit.patientName}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600 dark:text-gray-400 sm:px-6">
-                        {formatDate(visit.date)}
+                        {formatDate(visit.date ?? visit.createdAt?.slice(0, 10) ?? "")}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600 dark:text-gray-400 sm:px-6">
                         {visit.time}
@@ -370,7 +370,7 @@ export default function VisitsPage() {
                         {visit.patientName}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600 dark:text-gray-400 sm:px-6">
-                        {formatDate(visit.date)}
+                        {formatDate(visit.date ?? visit.createdAt?.slice(0, 10) ?? "")}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600 dark:text-gray-400 sm:px-6">
                         {visit.time}
