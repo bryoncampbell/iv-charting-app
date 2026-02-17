@@ -246,13 +246,20 @@ export default function EncounterPage() {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (!stored) return;
       const encounters: Encounter[] = JSON.parse(stored);
+      const adminForEncounter = {
+        ...administration,
+        toleranceOption:
+          administration.toleranceOption && administration.toleranceOption !== ""
+            ? administration.toleranceOption
+            : undefined,
+      };
       const merged: Encounter = {
         ...encounter,
         updatedAt: nowIso(),
         intake: { ...encounter.intake, ...intake },
         vitals,
         ivAccess,
-        administration,
+        administration: adminForEncounter,
         providerNote: { content: providerNote },
         discharge: { instructions: discharge },
         addenda,
