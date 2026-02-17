@@ -14,8 +14,12 @@ export default function VisitsPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("last7days");
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.encounters);
-    if (stored) {
+    const loadVisits = () => {
+      const stored = localStorage.getItem(STORAGE_KEYS.encounters);
+      if (!stored) {
+        setAllVisits([]);
+        return;
+      }
       try {
         const encounters: Encounter[] = JSON.parse(stored);
         setAllVisits(
@@ -28,7 +32,19 @@ export default function VisitsPage() {
       } catch {
         setAllVisits([]);
       }
-    }
+    };
+
+    // Initial load
+    loadVisits();
+
+    // Listen for changes to encounters in localStorage (e.g. status updates in other tabs)
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEYS.encounters) {
+        loadVisits();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   // Filter visits by date range (use local date so YYYY-MM-DD doesn't shift to previous day)
