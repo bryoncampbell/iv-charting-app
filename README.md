@@ -1,8 +1,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## IV Charting App
 
-First, run the development server:
+IV hydration and recovery visit charting: patients, visits, encounter workflow (intake, vitals, IV access, orders, administration), visit summary, and optional SMS link to share summaries.
+
+### How to run
+
+Install dependencies and start the dev server:
 
 ```bash
 npm run dev
@@ -14,9 +18,25 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Optional environment variables
+
+- **`NEXT_PUBLIC_APP_URL`** – Base URL of the app (e.g. `https://your-domain.com`). Used when generating share links for visit summaries so links work when opened by the patient.
+- **Twilio (SMS)** – To send the visit-summary link via SMS instead of opening the device SMS app with a pre-filled message, set:
+  - `TWILIO_ACCOUNT_SID`
+  - `TWILIO_AUTH_TOKEN`
+  - `TWILIO_PHONE_NUMBER`  
+  If these are not set, “Text link to patient” opens the default SMS app with the link pre-filled.
+
+Create a `.env.local` file in the project root for local development (see [Next.js env docs](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables)).
+
+### Data storage
+
+- **Patients, encounters, audit log** – Stored in the browser’s **localStorage** (no server database by default). Use the Dashboard “Reset demo data” to repopulate sample data.
+- **Shared visit summaries** – Stored in a **file-based store** on the server (directory `.data/share-summaries`, or `os.tmpdir()` if that directory isn’t writable). Share links are valid until the server process restarts or the file is removed; on serverless (e.g. Vercel) you’ll need a shared store (e.g. Vercel KV, Redis) for links to work across instances.
+
+---
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

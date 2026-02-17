@@ -24,3 +24,122 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media print {
+  /* 8.5 x 11 inch letter: use full page with minimal margin */
+  @page {
+    size: 8.5in 11in;
+    margin: 0.4in;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove main layout padding when printing */
+  main {
+    padding: 0 !important;
+  }
+
+  /* Patient-facing visit summary: fit on single letter page */
+  body {
+    background: #fff !important;
+    color: #1a1a1a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-summary {
+    max-width: 100% !important;
+    padding: 0.15in 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    color: #1a1a1a !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+  }
+
+  .print-summary h1 {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #111 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .print-summary h2 {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
+    padding-bottom: 1px !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  .print-summary section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 6px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .print-summary section:last-of-type {
+    margin-bottom: 0 !important;
+  }
+
+  .print-summary p,
+  .print-summary li,
+  .print-summary td,
+  .print-summary th {
+    font-size: 9px !important;
+    color: #333 !important;
+  }
+
+  .print-summary .print-header-block {
+    margin-bottom: 6px !important;
+    padding-bottom: 6px !important;
+    border-bottom: 2px solid #1a1a1a !important;
+  }
+
+  .print-summary .print-grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px 14px !important;
+  }
+
+  .print-summary .print-grid-2 > * {
+    min-width: 0 !important;
+  }
+
+  .print-summary .print-vitals-table th,
+  .print-summary .print-vitals-table td {
+    padding: 1px 4px !important;
+    font-size: 9px !important;
+  }
+
+  .print-summary .print-footer {
+    margin-top: 6px !important;
+    padding-top: 4px !important;
+    border-top: 1px solid #ddd !important;
+    font-size: 8px !important;
+    color: #666 !important;
+  }
+
+  .print-summary .print-cost-box {
+    background: #f5f5f5 !important;
+    padding: 4px 6px !important;
+    border-radius: 2px !important;
+    border: 1px solid #e0e0e0 !important;
+  }
+
+  .print-summary .print-cost-amount {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #111 !important;
+  }
+}
