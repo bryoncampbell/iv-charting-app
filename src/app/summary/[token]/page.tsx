@@ -126,6 +126,23 @@ export default function PublicSummaryPage() {
             </p>
           </div>
 
+          {encounter.status === "cancelled" && (
+            <section className="mt-4 rounded-lg border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-600 dark:bg-amber-900/20">
+              <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200 uppercase tracking-wide">Visit cancelled</h2>
+              <p className="mt-2 text-sm text-amber-800 dark:text-amber-300 font-medium">This visit was cancelled and did not take place.</p>
+              {encounter.cancellationReason && (
+                <p className="mt-2 text-sm text-amber-800 dark:text-amber-300"><strong>Reason:</strong> {encounter.cancellationReason}</p>
+              )}
+              {(encounter.cancelledBy || encounter.cancelledAt) && (
+                <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                  {encounter.cancelledBy && <span>Cancelled by {encounter.cancelledBy}</span>}
+                  {encounter.cancelledBy && encounter.cancelledAt && " · "}
+                  {encounter.cancelledAt && <span>{formatDateTime(encounter.cancelledAt)}</span>}
+                </p>
+              )}
+            </section>
+          )}
+
           <section className="mt-4 border-b border-gray-200 pb-4 dark:border-gray-700">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Patient</h2>
             <p className="mt-1 font-medium text-gray-900 dark:text-white">{encounter.patientName ?? "—"}</p>

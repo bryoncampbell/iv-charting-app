@@ -216,7 +216,13 @@ export default function VisitSummaryPage() {
       if (smsSent) {
         alert("A secure link to this visit summary has been sent to the patient's cell phone.");
       } else {
-        const message = `Your RevIVe visit summary is ready. View it here (secure link): ${url}`;
+        const isCancelled = encounter.status === "cancelled";
+        const reason = typeof encounter.cancellationReason === "string" ? encounter.cancellationReason.trim().slice(0, 100) : "";
+        const message = isCancelled
+          ? (reason
+            ? `Your RevIVe visit was cancelled. Reason: ${reason}${(encounter.cancellationReason ?? "").length > 100 ? "…" : ""}. View details: ${url}`
+            : `Your RevIVe visit was cancelled. View details here (secure link): ${url}`)
+          : `Your RevIVe visit summary is ready. View it here (secure link): ${url}`;
         const digits = cell.replace(/\D/g, "");
         const smsNumber = digits.length === 11 && digits.startsWith("1") ? digits : digits.length === 10 ? `1${digits}` : digits;
         const smsUrl = `sms:+${smsNumber}?body=${encodeURIComponent(message)}`;

@@ -33,7 +33,13 @@ export async function POST(request: NextRequest) {
 
     if (twilioAccountSid && twilioAuthToken && twilioFrom && cell) {
       try {
-        const message = `Your RevIVe visit summary is ready. View it here (secure link): ${url}`;
+        const isCancelled = encounter.status === "cancelled";
+        const reason = typeof encounter.cancellationReason === "string" ? encounter.cancellationReason.trim() : "";
+        const message = isCancelled
+          ? (reason
+            ? `Your RevIVe visit was cancelled. Reason: ${reason.slice(0, 100)}${reason.length > 100 ? "…" : ""}. View details: ${url}`
+            : `Your RevIVe visit was cancelled. View details here (secure link): ${url}`)
+          : `Your RevIVe visit summary is ready. View it here (secure link): ${url}`;
         const to = toE164(cell);
         const res = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`,
