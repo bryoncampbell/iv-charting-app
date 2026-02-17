@@ -185,6 +185,7 @@ export default function PatientsPage() {
         .then(({ error }) => {
           if (error) {
             console.error("Error creating patient in Supabase:", error);
+            alert(`Could not save patient to database: ${error.message}\n\nCode: ${error.code}. Check Supabase dashboard (Table Editor, RLS, and API logs).`);
             return;
           }
           setPatients((prev) => [...prev, newPatient]);
@@ -220,6 +221,11 @@ export default function PatientsPage() {
             </h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Manage patient information and records
+              {typeof window !== "undefined" && (
+                <span className="ml-2 text-xs">
+                  (Storage: {isSupabaseConfigured() && supabase ? "Supabase" : "Local"})
+                </span>
+              )}
             </p>
           </div>
           <button
