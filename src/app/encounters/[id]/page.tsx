@@ -226,7 +226,7 @@ export default function EncounterPage() {
           .eq("id", encounterId)
           .maybeSingle();
         if (error || !row) {
-          setLoadError(error?.message ?? "No encounter returned. If you just started this visit, check Supabase: Table Editor → encounters → RLS. Add a policy allowing SELECT for the anon role.");
+          setLoadError(error?.message ?? "No encounter returned. Fix: In Supabase Dashboard go to SQL Editor → New query, paste and run the contents of supabase/rls-policies.sql from this repo (allows anon to read/write encounters).");
           setIsLoading(false);
           return;
         }
