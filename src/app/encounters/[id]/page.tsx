@@ -246,11 +246,12 @@ export default function EncounterPage() {
       const stored = localStorage.getItem(STORAGE_KEYS.encounters);
       if (!stored) return;
       const encounters: Encounter[] = JSON.parse(stored);
+      const tol = administration.toleranceOption;
       const adminForEncounter = {
         ...administration,
         toleranceOption:
-          administration.toleranceOption && administration.toleranceOption !== ""
-            ? administration.toleranceOption
+          tol === "tolerated_well" || tol === "tolerated_complications" || tol === "unable_to_tolerate"
+            ? tol
             : undefined,
       };
       const merged: Encounter = {
