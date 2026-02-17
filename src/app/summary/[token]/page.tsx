@@ -120,6 +120,7 @@ export default function PublicSummaryPage() {
           <div className="print-header-block border-b border-gray-200 pb-4 dark:border-gray-700">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Visit Summary</h1>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">RevIVe Hydration and Recovery</p>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">Secure link — this page is only your visit summary. It does not provide access to any other part of the clinic system.</p>
             <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               {(encounter.date || encounter.createdAt?.slice(0, 10)) ? formatDate(encounter.date || encounter.createdAt?.slice(0, 10) || "") : "—"} · {encounter.time ?? ""}
             </p>
@@ -238,7 +239,7 @@ export default function PublicSummaryPage() {
           </section>
 
           <p className="print-footer mt-6 text-right text-xs text-gray-500 dark:text-gray-400">
-            RevIVe Hydration and Recovery · Secure link · You can print this page for your records.
+            RevIVe Hydration and Recovery · Secure link · You can print this page for your records. This link shows only your summary and does not access the clinic system.
           </p>
         </div>
         <div className="mt-6 no-print">
