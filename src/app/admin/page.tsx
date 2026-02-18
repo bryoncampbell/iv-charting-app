@@ -206,9 +206,19 @@ export default function AdminPage() {
   if (accessDenied) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-md w-full text-center">
+        <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-lg w-full text-center">
           <p className="text-gray-600 dark:text-gray-400">You don’t have access to this page.</p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">Your account must have the Admin role. Ask an admin or run in Supabase SQL: update profiles set role = 'admin' where user_id = 'your-user-uid';</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">Your account must have the Admin role. Run this in Supabase (SQL Editor):</p>
+          <pre className="mt-3 text-left text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded overflow-x-auto whitespace-pre-wrap">
+{`-- Update existing profile to admin:
+update profiles set role = 'admin', is_active = true where user_id = '${auth?.user?.id ?? ""}';
+
+-- If you have no row yet:
+insert into profiles (user_id, email, role, is_active)
+values ('${auth?.user?.id ?? ""}', (select email from auth.users where id = '${auth?.user?.id ?? ""}'), 'admin', true)
+on conflict (user_id) do update set role = 'admin', is_active = true;`}
+          </pre>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">Your user ID: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{auth?.user?.id ?? "—"}</code></p>
           <Link href="/dashboard" className="mt-4 inline-block text-blue-600 dark:text-blue-400">Back to Dashboard</Link>
         </div>
       </div>
