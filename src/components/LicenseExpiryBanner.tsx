@@ -36,9 +36,12 @@ export default function LicenseExpiryBanner({ accessToken }: LicenseExpiryBanner
     };
   }, [accessToken]);
 
-  if (!loaded || !profile || !shouldShowLicenseWarning(profile)) return null;
+  const profileForWarning = profile
+    ? { license_type: profile.license_type ?? null, license_expiry: profile.license_expiry ?? null }
+    : null;
+  if (!loaded || !profile || !shouldShowLicenseWarning(profileForWarning)) return null;
 
-  const status = getLicenseExpiryStatus(profile.license_expiry);
+  const status = getLicenseExpiryStatus(profile.license_expiry ?? null);
   const isExpired = status === "expired";
 
   return (
