@@ -21,7 +21,12 @@ create policy "Authenticated update all patients"
   using (true)
   with check (true);
 
--- Encounters: any authenticated user can read, insert, and update all.
+drop policy if exists "Authenticated delete all patients" on patients;
+create policy "Authenticated delete all patients"
+  on patients for delete to authenticated
+  using (true);
+
+-- Encounters: any authenticated user can read, insert, update, and delete all.
 drop policy if exists "Admins read all encounters" on encounters;
 drop policy if exists "Authenticated read all encounters" on encounters;
 create policy "Authenticated read all encounters"
@@ -39,3 +44,14 @@ create policy "Authenticated update all encounters"
   on encounters for update to authenticated
   using (true)
   with check (true);
+
+drop policy if exists "Authenticated delete all encounters" on encounters;
+create policy "Authenticated delete all encounters"
+  on encounters for delete to authenticated
+  using (true);
+
+-- Audit log: allow authenticated users to delete (for Reset Demo Data).
+drop policy if exists "Authenticated delete all audit_log" on audit_log;
+create policy "Authenticated delete all audit_log"
+  on audit_log for delete to authenticated
+  using (true);

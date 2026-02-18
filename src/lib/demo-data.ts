@@ -295,9 +295,14 @@ export async function resetDemoData(): Promise<void> {
 
   if (isSupabaseConfigured() && supabase) {
     try {
-      await supabase.from("audit_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("encounters").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("patients").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // Delete in order: encounters (reference patients), then patients, then audit_log
+      const dummyId = "00000000-0000-0000-0000-000000000000";
+      const { error: errEnc } = await supabase.from("encounters").delete().neq("id", dummyId);
+      if (errEnc) throw errEnc;
+      const { error: errPat } = await supabase.from("patients").delete().neq("id", dummyId);
+      if (errPat) throw errPat;
+      const { error: errAudit } = await supabase.from("audit_log").delete().neq("id", dummyId);
+      if (errAudit) throw errAudit;
       logAudit("demo_data.reset", "system", "app", "Demo data reset");
     } catch (e) {
       console.warn("Reset demo data failed:", e);
