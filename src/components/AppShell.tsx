@@ -21,7 +21,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const [licenseToastPhase, setLicenseToastPhase] = useState<LicenseToastPhase>("idle");
   const licenseToastShownRef = useRef(false);
-  const licenseExpiringRef = useRef(false);
   const isPublicSummary = pathname != null && pathname.startsWith("/summary");
   const isLogin = pathname === "/login";
   const isAuthCallback = pathname != null && pathname.startsWith("/auth/callback");
@@ -52,7 +51,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // License warning: applies to all roles. Toast pops up on dashboard after login, then fades away.
   const profile = auth?.profile;
   const licenseExpiring = profile ? shouldShowLicenseWarning(profile) : false;
-  licenseExpiringRef.current = licenseExpiring;
   const isDashboard = pathname === "/" || pathname === "/dashboard";
 
   // Reset "already shown" when leaving dashboard so the toast shows again on next visit
@@ -60,23 +58,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (!isDashboard) licenseToastShownRef.current = false;
   }, [isDashboard]);
 
-  // Show toast every time we're on dashboard and license is expiring/expired. Poll until profile loads (async after login).
+  // On dashboard: fetch profile from API (same as profile page) and show toast if license expiring/expired
   useEffect(() => {
-    if (!isDashboard || isPublicRoute || !auth?.user) return;
-    const intervalMs = 400;
-    const maxAttempts = 15;
-    let attempts = 0;
-    const id = setInterval(() => {
-      attempts++;
-      if (licenseToastShownRef.current) return;
-      if (licenseExpiringRef.current) {
-        licenseToastShownRef.current = true;
-        setLicenseToastPhase("show");
-      }
-      if (attempts >= maxAttempts) clearInterval(id);
-    }, intervalMs);
-    return () => clearInterval(id);
-  }, [isDashboard, isPublicRoute, auth?.user?.id]);
+    if (!isDashboard || isPublicRoute || !auth?.user || !auth?.session?.access_token || licenseToastShownRef.current) return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      fetch("/api/profile", { headers: { Authorization: `Bearer ${auth.session!.access_token}` } })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (cancelled || !data?.profile || licenseToastShownRef.current) return;
+          if (shouldShowLicenseWarning(data.profile)) {
+            licenseToastShownRef.current = true;
+            setLicenseToastPhase("show");
+          }
+        })
+        .catch(() => {});
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [isDashboard, isPublicRoute, auth?.user?.id, auth?.session?.access_token]);
 
   useEffect(() => {
     if (licenseToastPhase === "show") {
