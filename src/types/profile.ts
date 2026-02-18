@@ -47,3 +47,12 @@ export function isLicenseExpiringSoon(licenseExpiry: string | null | undefined):
   const daysUntil = Math.round((expiry.getTime() - today.getTime()) / msPerDay);
   return daysUntil <= 30;
 }
+
+/** True when the user should see the license warning (banner/toast). Applies to all roles (nursing, provider, admin). */
+export function shouldShowLicenseWarning(profile: Pick<Profile, "license_type" | "license_expiry"> | null): boolean {
+  if (!profile) return false;
+  const expiry = profile.license_expiry ?? (profile as { licenseExpiry?: string }).licenseExpiry;
+  const licenseType = (profile.license_type ?? (profile as { licenseType?: string }).licenseType)?.trim();
+  if (licenseType && !expiry?.trim()) return true;
+  return isLicenseExpiringSoon(expiry);
+}

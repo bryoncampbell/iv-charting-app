@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { isLicenseExpiringSoon } from "@/types/profile";
+import { shouldShowLicenseWarning } from "@/types/profile";
 
 type ProfileForm = {
   display_name: string;
@@ -129,7 +129,7 @@ export default function ProfilePage() {
     }
   };
 
-  const licenseExpiring = isLicenseExpiringSoon(auth?.profile?.license_expiry ?? null);
+  const licenseExpiring = shouldShowLicenseWarning(auth?.profile ?? null);
 
   if (!auth?.user) {
     return (
@@ -160,9 +160,11 @@ export default function ProfilePage() {
 
         {licenseExpiring && (
           <div className="mt-6 rounded-lg border border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 p-4">
-            <p className="font-medium text-amber-800 dark:text-amber-200">License expiration notice</p>
+            <p className="font-medium text-amber-800 dark:text-amber-200">License notice</p>
             <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-              Your license expires within 30 days or has already expired. Please update your license information below to keep chart signing accurate.
+              {auth?.profile?.license_expiry
+                ? "Your license expires within 30 days or has already expired. Please update your license information below to keep chart signing accurate."
+                : "Please set your license expiry date below so chart signing stays accurate."}
             </p>
           </div>
         )}
