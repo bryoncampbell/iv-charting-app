@@ -21,6 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const [licenseToastPhase, setLicenseToastPhase] = useState<LicenseToastPhase>("idle");
   const licenseToastShownRef = useRef(false);
+  const licenseExpiringRef = useRef(false);
   const isPublicSummary = pathname != null && pathname.startsWith("/summary");
   const isLogin = pathname === "/login";
   const isAuthCallback = pathname != null && pathname.startsWith("/auth/callback");
@@ -51,19 +52,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // License warning: applies to all roles. Toast pops up on dashboard after login, then fades away.
   const profile = auth?.profile;
   const licenseExpiring = profile ? shouldShowLicenseWarning(profile) : false;
+  licenseExpiringRef.current = licenseExpiring;
   const isDashboard = pathname === "/" || pathname === "/dashboard";
+
   useEffect(() => {
     if (isLogin) licenseToastShownRef.current = false;
   }, [isLogin]);
+
+  // Show toast when we're on dashboard and license is expiring (profile may load after first paint)
   useEffect(() => {
-    if (!isDashboard || isPublicRoute || !licenseExpiring || licenseToastShownRef.current) return;
-    // Delay so toast appears after dashboard has painted (profile loads async after redirect)
+    if (!isDashboard || isPublicRoute || !auth?.user) return;
+    const delayMs = 1200;
     const t = setTimeout(() => {
+      if (licenseToastShownRef.current) return;
+      if (!licenseExpiringRef.current) return;
       licenseToastShownRef.current = true;
       setLicenseToastPhase("show");
-    }, 800);
+    }, delayMs);
     return () => clearTimeout(t);
-  }, [isDashboard, isPublicRoute, licenseExpiring, profile]);
+  }, [isDashboard, isPublicRoute, auth?.user?.id, profile]);
 
   useEffect(() => {
     if (licenseToastPhase === "show") {
