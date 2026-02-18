@@ -153,7 +153,7 @@ export default function EncounterPage() {
   const [activeTab, setActiveTab] = useState<Tab>("intake");
   const [isLoading, setIsLoading] = useState(true);
 
-  const [currentRole, setCurrentRoleState] = useState<Role>("nurse");
+  const [currentRoleState, setCurrentRoleState] = useState<Role>("nurse");
   const currentRole = lockedRole ?? currentRoleState;
   const setCurrentRole = (r: Role) => {
     if (canSwitchRole) setCurrentRoleState(r);
