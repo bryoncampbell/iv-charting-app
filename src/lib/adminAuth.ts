@@ -1,10 +1,12 @@
 /**
  * Verify the request is from an authenticated admin. Use in API routes only.
  * Pass the request; returns { error } or { userId }.
+ * Uses service role to read profile so RLS cannot block the admin check.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const anonKey =
@@ -28,11 +30,11 @@ export async function assertAdmin(
   if (userError || !user?.id) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
-  const { data: profile, error: profileError } = await client
-    .from("profiles")
-    .select("user_id, role, is_active")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Use service role to read profile so RLS cannot block (e.g. on Vercel with same DB)
+  const profileResult = supabaseAdmin
+    ? await supabaseAdmin.from("profiles").select("user_id, role, is_active").eq("user_id", user.id).maybeSingle()
+    : await client.from("profiles").select("user_id, role, is_active").eq("user_id", user.id).maybeSingle();
+  const { data: profile, error: profileError } = profileResult;
   if (profileError || !profile) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
