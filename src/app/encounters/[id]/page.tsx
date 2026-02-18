@@ -367,16 +367,18 @@ export default function EncounterPage() {
     };
 
     if (isSupabaseConfigured() && supabase) {
-      return supabase
-        .from("encounters")
-        .upsert(encounterToRow(merged), { onConflict: "id" })
-        .then(({ error }) => {
-          if (error) {
-            console.error("Error saving encounter to Supabase:", error);
-            return Promise.reject(error);
-          }
-          setEncounter(merged);
-        });
+      return Promise.resolve(
+        supabase
+          .from("encounters")
+          .upsert(encounterToRow(merged), { onConflict: "id" })
+          .then(({ error }) => {
+            if (error) {
+              console.error("Error saving encounter to Supabase:", error);
+              return Promise.reject(error);
+            }
+            setEncounter(merged);
+          })
+      );
     }
 
     try {
