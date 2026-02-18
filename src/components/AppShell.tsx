@@ -59,18 +59,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (isLogin) licenseToastShownRef.current = false;
   }, [isLogin]);
 
-  // Show toast when we're on dashboard and license is expiring (profile may load after first paint)
+  // Show toast when we're on dashboard and license is expiring. Poll until profile loads (it's async after login).
   useEffect(() => {
     if (!isDashboard || isPublicRoute || !auth?.user) return;
-    const delayMs = 1200;
-    const t = setTimeout(() => {
+    const intervalMs = 400;
+    const maxAttempts = 15;
+    let attempts = 0;
+    const id = setInterval(() => {
+      attempts++;
       if (licenseToastShownRef.current) return;
-      if (!licenseExpiringRef.current) return;
-      licenseToastShownRef.current = true;
-      setLicenseToastPhase("show");
-    }, delayMs);
-    return () => clearTimeout(t);
-  }, [isDashboard, isPublicRoute, auth?.user?.id, profile]);
+      if (licenseExpiringRef.current) {
+        licenseToastShownRef.current = true;
+        setLicenseToastPhase("show");
+      }
+      if (attempts >= maxAttempts) clearInterval(id);
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [isDashboard, isPublicRoute, auth?.user?.id]);
 
   useEffect(() => {
     if (licenseToastPhase === "show") {
