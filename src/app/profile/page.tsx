@@ -134,10 +134,10 @@ export default function ProfilePage() {
   };
 
   const licenseExpiring = shouldShowLicenseWarning({
-    license_type: form.license_type || auth?.profile?.license_type ?? null,
-    license_expiry: form.license_expiry || auth?.profile?.license_expiry ?? null,
+    license_type: (form.license_type || auth?.profile?.license_type) ?? null,
+    license_expiry: (form.license_expiry || auth?.profile?.license_expiry) ?? null,
   });
-  const expiryStatus = getLicenseExpiryStatus(form.license_expiry || auth?.profile?.license_expiry ?? null);
+  const expiryStatus = getLicenseExpiryStatus((form.license_expiry || auth?.profile?.license_expiry) ?? null);
   const expiryInputClass = getLicenseExpiryInputClass(form.license_expiry);
 
   if (!auth?.user) {
