@@ -11,6 +11,7 @@ import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { patientRowToPatient, patientToRow, encounterToRow } from "@/lib/supabaseMappers";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formatPhoneNumber = (value: string): string => {
   const digits = value.replace(/\D/g, "");
@@ -24,6 +25,8 @@ const normalizePhoneNumber = (phone: string): string => phone.replace(/\D/g, "")
 
 export default function NewVisitPage() {
   const router = useRouter();
+  const auth = useAuth();
+  const createdBy = auth?.session?.user?.id ?? null;
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -133,7 +136,7 @@ export default function NewVisitPage() {
     if (isSupabaseConfigured() && supabase) {
       supabase
         .from("encounters")
-        .insert(encounterToRow(encounter))
+        .insert(encounterToRow(encounter, createdBy))
         .then(({ error }) => {
           if (error) {
             console.error("Error creating encounter in Supabase:", error);
@@ -179,7 +182,7 @@ export default function NewVisitPage() {
     };
 
     if (isSupabaseConfigured() && supabase) {
-      const { error } = await supabase.from("patients").insert(patientToRow(newPatient));
+      const { error } = await supabase.from("patients").insert(patientToRow(newPatient, createdBy));
       if (error) {
         console.error("Error creating patient in Supabase:", error);
         alert(`Could not add patient: ${error.message}`);

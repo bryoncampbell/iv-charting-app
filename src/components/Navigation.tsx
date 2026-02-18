@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
 export default function Navigation() {
   const pathname = usePathname();
+  const auth = useAuth();
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -34,7 +37,7 @@ export default function Navigation() {
                 </span>
               </Link>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
@@ -48,6 +51,28 @@ export default function Navigation() {
                   {item.label}
                 </Link>
               ))}
+              {isSupabaseConfigured() && (
+                <div className="ml-2 flex items-center gap-2 border-l border-gray-200 dark:border-gray-600 pl-2">
+                  {auth?.user ? (
+                    <>
+                      <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]" title={auth.user.email ?? undefined}>
+                        {auth.user.email}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => auth.signOut()}
+                        className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                      >
+                        Sign out
+                      </button>
+                    </>
+                  ) : (
+                    <Link href="/login" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                      Sign in
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -75,12 +100,34 @@ export default function Navigation() {
 
       {/* Mobile Top Bar (hidden when printing) */}
       <div className="no-print sticky top-0 z-50 md:hidden border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center">
             <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
               RevIVe Hydration and Recovery
             </span>
           </Link>
+          {isSupabaseConfigured() && (
+            <div className="flex items-center gap-2">
+              {auth?.user ? (
+                <>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[100px]" title={auth.user.email ?? undefined}>
+                    {auth.user.email}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => auth.signOut()}
+                    className="text-xs font-medium text-gray-600 dark:text-gray-400"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <Link href="/login" className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                  Sign in
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>

@@ -248,9 +248,9 @@ function getSeedEncountersForDemo(patients: Patient[]): Encounter[] {
 /**
  * Seed 40 patients and encounters with varied vitals for customer demo.
  * Call from "Load sample data" on the dashboard.
- * When Supabase is configured, inserts into DB; otherwise localStorage only.
+ * When Supabase is configured, inserts into DB; pass createdBy to scope by user (e.g. auth.session.user.id).
  */
-export async function seedDemoDataForCustomer(): Promise<void> {
+export async function seedDemoDataForCustomer(createdBy?: string | null): Promise<void> {
   if (typeof window === "undefined") return;
   const patients = getSeedPatientsForDemo();
   const encounters = getSeedEncountersForDemo(patients);
@@ -258,12 +258,12 @@ export async function seedDemoDataForCustomer(): Promise<void> {
   if (isSupabaseConfigured() && supabase) {
     try {
       await resetDemoData();
-      const { error: patientsError } = await supabase.from("patients").insert(patients.map(patientToRow));
+      const { error: patientsError } = await supabase.from("patients").insert(patients.map((p) => patientToRow(p, createdBy)));
       if (patientsError) {
         console.warn("Seed demo data (patients) failed:", patientsError);
         return;
       }
-      const { error: encountersError } = await supabase.from("encounters").insert(encounters.map(encounterToRow));
+      const { error: encountersError } = await supabase.from("encounters").insert(encounters.map((e) => encounterToRow(e, createdBy)));
       if (encountersError) {
         console.warn("Seed demo data (encounters) failed:", encountersError);
         return;

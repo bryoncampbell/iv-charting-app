@@ -9,6 +9,7 @@ import type { Encounter, Patient } from "@/types";
 export type EncounterRow = {
   id: string;
   patient_id: string;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
   status: string;
@@ -78,11 +79,12 @@ export function encounterRowToEncounter(row: EncounterRow): Encounter {
   };
 }
 
-/** Encounter → Supabase row (for insert/update) */
-export function encounterToRow(e: Encounter): EncounterRow {
+/** Encounter → Supabase row (for insert/update). Pass createdBy when inserting to scope by user. */
+export function encounterToRow(e: Encounter, createdBy?: string | null): EncounterRow {
   return {
     id: e.id,
     patient_id: e.patientId,
+    ...(createdBy !== undefined && { created_by: createdBy }),
     created_at: e.createdAt,
     updated_at: e.updatedAt,
     status: e.status,
@@ -119,6 +121,7 @@ export function encounterToRow(e: Encounter): EncounterRow {
 /** Supabase patients row shape */
 export type PatientRow = {
   id: string;
+  created_by?: string | null;
   first_name: string;
   last_name: string;
   dob: string;
@@ -157,10 +160,11 @@ export function patientRowToPatient(row: PatientRow): Patient {
   };
 }
 
-/** Patient → Supabase row (for insert/update) */
-export function patientToRow(p: Patient): PatientRow {
+/** Patient → Supabase row (for insert/update). Pass createdBy when inserting to scope by user. */
+export function patientToRow(p: Patient, createdBy?: string | null): PatientRow {
   return {
     id: p.id,
+    ...(createdBy !== undefined && { created_by: createdBy }),
     first_name: p.firstName,
     last_name: p.lastName,
     dob: p.dob,

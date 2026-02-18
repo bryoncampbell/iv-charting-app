@@ -1,12 +1,14 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { seedDemoDataForCustomer } from "@/lib/demo-data";
 
 export default function LoadSampleDataButton() {
+  const auth = useAuth();
   const handleLoad = async () => {
     if (typeof window === "undefined") return;
     if (!confirm("Load 40 sample patients and visits with varied vitals? This will replace current data.")) return;
-    await seedDemoDataForCustomer();
+    await seedDemoDataForCustomer(auth?.session?.user?.id ?? null);
     window.location.href = "/dashboard";
   };
 
