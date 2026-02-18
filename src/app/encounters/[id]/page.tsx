@@ -163,7 +163,10 @@ export default function EncounterPage() {
   const [providerName, setProviderName] = useState("");
 
   useEffect(() => {
-    if (lockedRole != null) setCurrentRoleState(lockedRole);
+    if (lockedRole != null) {
+      setCurrentRoleState(lockedRole);
+      setActiveTab(lockedRole === "provider" ? "provider" : "intake");
+    }
   }, [lockedRole]);
 
   useEffect(() => {
@@ -171,6 +174,19 @@ export default function EncounterPage() {
     setNurseName(localStorage.getItem(ROLE_STORAGE_KEY_NURSE) ?? "");
     setProviderName(localStorage.getItem(ROLE_STORAGE_KEY_PROVIDER) ?? "");
   }, []);
+
+  // When signed in as provider, pre-fill "sign as" from profile display name if empty
+  useEffect(() => {
+    const displayName = auth?.profile?.display_name?.trim();
+    if (lockedRole !== "provider" || !displayName) return;
+    setProviderName((prev) => {
+      if (prev.trim()) return prev;
+      try {
+        localStorage.setItem(ROLE_STORAGE_KEY_PROVIDER, displayName);
+      } catch {}
+      return displayName;
+    });
+  }, [lockedRole, auth?.profile?.display_name]);
   const persistNurseName = (name: string) => {
     setNurseName(name);
     try {
