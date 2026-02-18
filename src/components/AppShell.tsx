@@ -21,7 +21,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isAccountDisabled = pathname === "/account-disabled";
   const isSetPassword = pathname === "/set-password";
 
-  const isAdminRoute = pathname === "/admin";
   const isPublicRoute = isPublicSummary || isLogin || isAuthCallback || isAccountDisabled;
 
   const mustResetPassword = (auth?.user as { app_metadata?: { must_reset_password?: boolean } } | undefined)?.app_metadata?.must_reset_password === true;
@@ -40,10 +39,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       router.replace("/account-disabled");
       return;
     }
-    if (isAdminRoute && auth.profile && !auth.isAdmin) {
-      router.replace("/dashboard");
-    }
-  }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, auth?.isAdmin, isPublicRoute, isAdminRoute, isSetPassword, mustResetPassword, router]);
+    // Admin access is enforced by the admin page via API (so admins whose profile didn't load can still get in)
+  }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, isPublicRoute, isSetPassword, mustResetPassword, router]);
 
   if (isPublicSummary || isSetPassword) {
     return <>{children}</>;

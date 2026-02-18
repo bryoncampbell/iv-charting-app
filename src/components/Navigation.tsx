@@ -15,7 +15,7 @@ export default function Navigation() {
     { href: "/visits", label: "Visits", icon: "📋" },
     { href: "/reports", label: "Reports", icon: "📈" },
     { href: "/audit", label: "Audit Log", icon: "📜" },
-    ...(auth?.isAdmin ? [{ href: "/admin", label: "Admin", icon: "⚙️" } as const] : []),
+    ...(auth?.user ? [{ href: "/admin", label: "Admin", icon: "⚙️" } as const] : []),
   ];
 
   const isActive = (href: string) => {

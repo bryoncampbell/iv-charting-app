@@ -37,13 +37,29 @@ export default function AdminPage() {
   const [createRole, setCreateRole] = useState<AppRole>("nursing");
   const [creating, setCreating] = useState(false);
   const [createResult, setCreateResult] = useState<{ email: string; temporary_password: string; email_sent: boolean } | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    if (!auth?.session?.access_token || !auth?.isAdmin) return;
+    if (!auth?.session?.access_token || !auth?.user) {
+      setLoading(false);
+      return;
+    }
+    setAccessDenied(false);
     const token = auth.session.access_token;
     fetch("/api/admin/users", { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))))
+      .then((r) => {
+        if (r.ok) return r.json();
+        if (r.status === 403) return { users: null, forbidden: true };
+        return Promise.reject(new Error(r.statusText));
+      })
       .then((data) => {
+        if (data?.forbidden) {
+          setAccessDenied(true);
+          setError(null);
+          setUsers([]);
+          return;
+        }
+        setAccessDenied(false);
         setUsers(data.users ?? []);
         setError(null);
       })
@@ -52,7 +68,7 @@ export default function AdminPage() {
         setUsers([]);
       })
       .finally(() => setLoading(false));
-  }, [auth?.session?.access_token, auth?.isAdmin]);
+  }, [auth?.session?.access_token, auth?.user]);
 
   const handleUpdateRole = async (userId: string, role: AppRole) => {
     if (!auth?.session?.access_token) return;
@@ -180,11 +196,19 @@ export default function AdminPage() {
       </div>
     );
   }
-  if (!auth.isAdmin) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <p className="text-gray-600 dark:text-gray-400">Loading…</p>
+      </div>
+    );
+  }
+  if (accessDenied) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-md w-full text-center">
           <p className="text-gray-600 dark:text-gray-400">You don’t have access to this page.</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">Your account must have the Admin role. Ask an admin or run in Supabase SQL: update profiles set role = 'admin' where user_id = 'your-user-uid';</p>
           <Link href="/dashboard" className="mt-4 inline-block text-blue-600 dark:text-blue-400">Back to Dashboard</Link>
         </div>
       </div>
