@@ -49,12 +49,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, isPublicRoute, isSetPassword, mustResetPassword, router]);
 
   // License expiration toast: show once per session on login when profile has expiring license
-  const licenseExpiring = auth?.profile && isLicenseExpiringSoon(auth.profile.license_expiry);
+  const profile = auth?.profile;
+  const licenseExpiry = profile?.license_expiry ?? (profile as { licenseExpiry?: string } | undefined)?.licenseExpiry;
+  const licenseExpiring = profile && isLicenseExpiringSoon(licenseExpiry);
   useEffect(() => {
     if (isPublicRoute || !licenseExpiring || licenseToastShownRef.current) return;
     licenseToastShownRef.current = true;
-    setLicenseToastPhase("show");
-  }, [isPublicRoute, licenseExpiring]);
+    // Brief delay so toast appears after redirect and paint (more reliable on login)
+    const t = setTimeout(() => setLicenseToastPhase("show"), 400);
+    return () => clearTimeout(t);
+  }, [isPublicRoute, licenseExpiring, profile]);
 
   useEffect(() => {
     if (licenseToastPhase === "show") {
@@ -87,7 +91,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const showLicenseWarning = auth?.profile && isLicenseExpiringSoon(auth.profile.license_expiry);
+  const showLicenseWarning = licenseExpiring;
 
   return (
     <>
