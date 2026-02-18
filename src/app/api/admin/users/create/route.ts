@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     await supabaseAdmin.from("profiles").update({
       email,
-      display_name: displayName ?? [first_name, last_name].filter(Boolean).join(" ") || null,
+      display_name: displayName ?? ([first_name, last_name].filter(Boolean).join(" ") || null),
       first_name,
       last_name,
       date_of_birth: date_of_birth || null,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         id: newUser.user.id,
         email: newUser.user.email,
         role,
-        display_name: displayName ?? [first_name, last_name].filter(Boolean).join(" ") || null,
+        display_name: displayName ?? ([first_name, last_name].filter(Boolean).join(" ") || null),
       },
       temporary_password: tempPassword,
       email_sent: emailSent,
