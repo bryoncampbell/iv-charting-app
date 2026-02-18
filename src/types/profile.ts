@@ -56,3 +56,39 @@ export function shouldShowLicenseWarning(profile: Pick<Profile, "license_type" |
   if (licenseType && !expiry?.trim()) return true;
   return isLicenseExpiringSoon(expiry);
 }
+
+/** True if license_expiry date is before today. */
+export function isLicenseExpired(licenseExpiry: string | null | undefined): boolean {
+  if (!licenseExpiry?.trim()) return false;
+  const expiry = new Date(licenseExpiry.trim());
+  if (Number.isNaN(expiry.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+  return expiry.getTime() < today.getTime();
+}
+
+/** Status for styling: expired (red), within 30 days (yellow), or ok. */
+export type LicenseExpiryStatus = "expired" | "expiring_soon" | "ok";
+
+export function getLicenseExpiryStatus(licenseExpiry: string | null | undefined): LicenseExpiryStatus {
+  if (!licenseExpiry?.trim()) return "ok";
+  const expiry = new Date(licenseExpiry.trim());
+  if (Number.isNaN(expiry.getTime())) return "ok";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysUntil = Math.round((expiry.getTime() - today.getTime()) / msPerDay);
+  if (daysUntil < 0) return "expired";
+  if (daysUntil <= 30) return "expiring_soon";
+  return "ok";
+}
+
+/** Tailwind classes for license expiry input: red when expired, yellow when expiring within 30 days. */
+export function getLicenseExpiryInputClass(licenseExpiry: string | null | undefined): string {
+  const status = getLicenseExpiryStatus(licenseExpiry);
+  if (status === "expired") return "border-red-500 bg-red-50 dark:bg-red-900/20 dark:border-red-600";
+  if (status === "expiring_soon") return "border-amber-500 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-600";
+  return "";
+}

@@ -5,9 +5,19 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
+function signedInLabel(profile: { first_name?: string | null; last_name?: string | null; display_name?: string | null; role?: string } | null, email?: string | null): string {
+  const name = profile
+    ? [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() || (profile.display_name ?? "").trim()
+    : "";
+  const role = profile?.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : "";
+  const namePart = name || email || "Account";
+  return role ? `${namePart} (${role})` : namePart;
+}
+
 export default function Navigation() {
   const pathname = usePathname();
   const auth = useAuth();
+  const signedInText = auth?.user ? signedInLabel(auth.profile, auth.user.email) : "";
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -57,8 +67,8 @@ export default function Navigation() {
                 <div className="ml-2 flex items-center gap-2 border-l border-gray-200 dark:border-gray-600 pl-2">
                   {auth?.user ? (
                     <>
-                      <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]" title={auth.user.email ?? undefined}>
-                        {auth.user.email}
+                      <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[200px]" title={auth.user.email ?? undefined}>
+                        {signedInText}
                       </span>
                       <button
                         type="button"
@@ -112,8 +122,8 @@ export default function Navigation() {
             <div className="flex items-center gap-2">
               {auth?.user ? (
                 <>
-                  <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[100px]" title={auth.user.email ?? undefined}>
-                    {auth.user.email}
+                  <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[140px]" title={auth.user.email ?? undefined}>
+                    {signedInText}
                   </span>
                   <button
                     type="button"

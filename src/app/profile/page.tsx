@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { shouldShowLicenseWarning } from "@/types/profile";
+import {
+  getLicenseExpiryInputClass,
+  getLicenseExpiryStatus,
+  shouldShowLicenseWarning,
+} from "@/types/profile";
 
 type ProfileForm = {
   display_name: string;
@@ -129,7 +133,12 @@ export default function ProfilePage() {
     }
   };
 
-  const licenseExpiring = shouldShowLicenseWarning(auth?.profile ?? null);
+  const licenseExpiring = shouldShowLicenseWarning({
+    license_type: form.license_type || auth?.profile?.license_type ?? null,
+    license_expiry: form.license_expiry || auth?.profile?.license_expiry ?? null,
+  });
+  const expiryStatus = getLicenseExpiryStatus(form.license_expiry || auth?.profile?.license_expiry ?? null);
+  const expiryInputClass = getLicenseExpiryInputClass(form.license_expiry);
 
   if (!auth?.user) {
     return (
@@ -159,12 +168,38 @@ export default function ProfilePage() {
         </p>
 
         {licenseExpiring && (
-          <div className="mt-6 rounded-lg border border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 p-4">
-            <p className="font-medium text-amber-800 dark:text-amber-200">License notice</p>
-            <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-              {auth?.profile?.license_expiry
-                ? "Your license expires within 30 days or has already expired. Please update your license information below to keep chart signing accurate."
-                : "Please set your license expiry date below so chart signing stays accurate."}
+          <div
+            className={`mt-6 rounded-lg border p-4 ${
+              expiryStatus === "expired"
+                ? "border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-900/20"
+                : "border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20"
+            }`}
+          >
+            <p
+              className={`font-medium ${
+                expiryStatus === "expired"
+                  ? "text-red-800 dark:text-red-200"
+                  : "text-amber-800 dark:text-amber-200"
+              }`}
+            >
+              {expiryStatus === "expired"
+                ? "Your license has expired"
+                : form.license_expiry || auth?.profile?.license_expiry
+                  ? "Your license expires within 30 days"
+                  : "License notice"}
+            </p>
+            <p
+              className={`mt-1 text-sm ${
+                expiryStatus === "expired"
+                  ? "text-red-700 dark:text-red-300"
+                  : "text-amber-700 dark:text-amber-300"
+              }`}
+            >
+              {expiryStatus === "expired"
+                ? "Please update your license information below to keep chart signing accurate."
+                : form.license_expiry || auth?.profile?.license_expiry
+                  ? "Please update your license expiry date below so chart signing stays accurate."
+                  : "Please set your license expiry date below so chart signing stays accurate."}
             </p>
           </div>
         )}
@@ -305,7 +340,7 @@ export default function ProfilePage() {
                   type="date"
                   value={form.license_expiry}
                   onChange={(e) => setForm((f) => ({ ...f, license_expiry: e.target.value }))}
-                  className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                  className={`mt-1 w-full rounded border px-3 py-2 text-sm text-gray-900 dark:text-white ${expiryInputClass || "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"}`}
                 />
               </div>
             </div>

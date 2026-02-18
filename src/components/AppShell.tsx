@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
-import { shouldShowLicenseWarning } from "@/types/profile";
+import { isLicenseExpired, shouldShowLicenseWarning } from "@/types/profile";
 
 /**
  * Wraps app content and shows main app navigation only on internal routes.
@@ -48,16 +48,22 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Admin access is enforced by the admin page via API (so admins whose profile didn't load can still get in)
   }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, isPublicRoute, isSetPassword, mustResetPassword, router]);
 
-  // License warning: applies to all roles (nursing, provider, admin). Show when license is expiring/expired or license type set but no expiry.
+  // License warning: applies to all roles. Toast pops up on dashboard after login, then fades away.
   const profile = auth?.profile;
   const licenseExpiring = profile ? shouldShowLicenseWarning(profile) : false;
+  const isDashboard = pathname === "/" || pathname === "/dashboard";
   useEffect(() => {
-    if (isPublicRoute || !licenseExpiring || licenseToastShownRef.current) return;
-    licenseToastShownRef.current = true;
-    // Brief delay so toast appears after redirect and paint (more reliable on login)
-    const t = setTimeout(() => setLicenseToastPhase("show"), 400);
+    if (isLogin) licenseToastShownRef.current = false;
+  }, [isLogin]);
+  useEffect(() => {
+    if (!isDashboard || isPublicRoute || !licenseExpiring || licenseToastShownRef.current) return;
+    // Delay so toast appears after dashboard has painted (profile loads async after redirect)
+    const t = setTimeout(() => {
+      licenseToastShownRef.current = true;
+      setLicenseToastPhase("show");
+    }, 800);
     return () => clearTimeout(t);
-  }, [isPublicRoute, licenseExpiring, profile]);
+  }, [isDashboard, isPublicRoute, licenseExpiring, profile]);
 
   useEffect(() => {
     if (licenseToastPhase === "show") {
@@ -91,6 +97,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const showLicenseWarning = licenseExpiring;
+  const licenseExpired = profile && (profile.license_expiry ?? (profile as { license_expiry?: string }).license_expiry) && isLicenseExpired(profile.license_expiry ?? (profile as { license_expiry?: string }).license_expiry);
 
   return (
     <>
@@ -101,15 +108,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           style={{ opacity: licenseToastPhase === "fadeout" ? 0 : 1 }}
           role="alert"
         >
-          <div className="rounded-lg border border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/95 px-4 py-3 shadow-lg">
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-              {profile?.license_expiry || (profile as { license_expiry?: string })?.license_expiry
-                ? "Your license expires within 30 days or has expired. Please update your license information."
-                : "Please set your license expiry date in your profile so chart signing stays accurate."}
+          <div
+            className={`rounded-lg border px-4 py-3 shadow-lg ${
+              licenseExpired
+                ? "border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900/95"
+                : "border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/95"
+            }`}
+          >
+            <p
+              className={`text-sm font-medium ${
+                licenseExpired ? "text-red-800 dark:text-red-200" : "text-amber-800 dark:text-amber-200"
+              }`}
+            >
+              {licenseExpired
+                ? "Your license has expired. Please update your license information."
+                : profile?.license_expiry || (profile as { license_expiry?: string })?.license_expiry
+                  ? "Your license expires within 30 days or has expired. Please update your license information."
+                  : "Please set your license expiry date in your profile so chart signing stays accurate."}
             </p>
             <Link
               href="/profile"
-              className="mt-2 inline-block text-sm font-medium text-amber-700 underline dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
+              className={`mt-2 inline-block text-sm font-medium underline ${
+                licenseExpired
+                  ? "text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200"
+                  : "text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
+              }`}
             >
               Update profile →
             </Link>
@@ -117,16 +140,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
       {showLicenseWarning && (
-        <div className="no-print bg-amber-100 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700">
+        <div
+          className={`no-print border-b ${
+            licenseExpired
+              ? "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700"
+              : "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700"
+          }`}
+        >
           <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 flex items-center justify-between gap-4 flex-wrap">
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              {profile?.license_expiry || (profile as { license_expiry?: string })?.license_expiry
-                ? "Your license expires within 30 days or has expired. Please update your license information so chart signing remains accurate."
-                : "Please set your license expiry date in your profile so chart signing remains accurate."}
+            <p
+              className={`text-sm ${
+                licenseExpired ? "text-red-800 dark:text-red-200" : "text-amber-800 dark:text-amber-200"
+              }`}
+            >
+              {licenseExpired
+                ? "Your license has expired. Please update your license information so chart signing remains accurate."
+                : profile?.license_expiry || (profile as { license_expiry?: string })?.license_expiry
+                  ? "Your license expires within 30 days or has expired. Please update your license information so chart signing remains accurate."
+                  : "Please set your license expiry date in your profile so chart signing remains accurate."}
             </p>
             <Link
               href="/profile"
-              className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600"
+              className={`shrink-0 rounded px-3 py-1.5 text-sm font-medium text-white ${
+                licenseExpired
+                  ? "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+                  : "bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600"
+              }`}
             >
               Update profile
             </Link>

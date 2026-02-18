@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/types/profile";
+import { getLicenseExpiryInputClass } from "@/types/profile";
 
 type AdminUser = {
   id: string;
@@ -641,7 +642,12 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Expiry</label>
-                      <input type="date" value={editProfileForm.license_expiry ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, license_expiry: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                      <input
+                        type="date"
+                        value={editProfileForm.license_expiry ?? ""}
+                        onChange={(e) => setEditProfileForm((f) => ({ ...f, license_expiry: e.target.value }))}
+                        className={`mt-1 w-full rounded border px-3 py-2 text-sm text-gray-900 dark:text-white ${getLicenseExpiryInputClass(editProfileForm.license_expiry ?? null) || "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"}`}
+                      />
                     </div>
                   </div>
                 </div>
