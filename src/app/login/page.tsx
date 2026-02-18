@@ -58,7 +58,10 @@ function LoginContent() {
     const { error: err } = await auth!.sendPasswordResetEmail(email.trim());
     setLoading(false);
     if (err) {
-      setError(err.message);
+      const msg = /rate limit|rate_limit|429/i.test(err.message)
+        ? "Too many emails sent. Please wait an hour and try again."
+        : err.message;
+      setError(msg);
       return;
     }
     setForgotPasswordSent(true);

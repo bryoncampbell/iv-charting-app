@@ -83,9 +83,12 @@ export default function AdminPage() {
         method: "POST",
         headers: getAuthHeaders(auth.session),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? res.statusText);
+        const msg = /rate limit|rate_limit|429/i.test(data.error ?? res.statusText)
+          ? "Email rate limit exceeded. Wait an hour and try again."
+          : (data.error ?? res.statusText);
+        throw new Error(msg);
       }
       setSendingResetId(null);
       alert("Password reset email sent.");
