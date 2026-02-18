@@ -8,6 +8,8 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { encounterRowToEncounter } from "@/lib/supabaseMappers";
 import ResetDemoDataButton from "@/components/ResetDemoDataButton";
 import LoadSampleDataButton from "@/components/LoadSampleDataButton";
+import LicenseExpiryBanner from "@/components/LicenseExpiryBanner";
+import { useAuth } from "@/contexts/AuthContext";
 
 function getLocalDateString(d: Date): string {
   const y = d.getFullYear();
@@ -17,6 +19,7 @@ function getLocalDateString(d: Date): string {
 }
 
 export default function DashboardPage() {
+  const auth = useAuth();
   const [totalPatients, setTotalPatients] = useState<number>(0);
   const [todayVisits, setTodayVisits] = useState<number>(0);
   const [weekVisits, setWeekVisits] = useState<number>(0);
@@ -107,6 +110,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <LicenseExpiryBanner accessToken={auth?.session?.access_token} />
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Dashboard

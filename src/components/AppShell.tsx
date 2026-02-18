@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
@@ -13,14 +13,10 @@ import { isLicenseExpired, shouldShowLicenseWarning } from "@/types/profile";
  * Public summary links (/summary/[token]) get no navigation—patient sees only the summary, no access to the system.
  * When Supabase is configured, redirects to /login if not signed in (except for /login, /auth/callback, /summary).
  */
-type LicenseToastPhase = "idle" | "show" | "fadeout";
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
-  const [licenseToastPhase, setLicenseToastPhase] = useState<LicenseToastPhase>("idle");
-  const licenseToastShownRef = useRef(false);
   const isPublicSummary = pathname != null && pathname.startsWith("/summary");
   const isLogin = pathname === "/login";
   const isAuthCallback = pathname != null && pathname.startsWith("/auth/callback");
@@ -48,48 +44,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Admin access is enforced by the admin page via API (so admins whose profile didn't load can still get in)
   }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, isPublicRoute, isSetPassword, mustResetPassword, router]);
 
-  // License warning: applies to all roles. Toast pops up on dashboard after login, then fades away.
+  // License warning: persistent banner below nav when license is expiring/expired (dashboard has its own inline banner too)
   const profile = auth?.profile;
   const licenseExpiring = profile ? shouldShowLicenseWarning(profile) : false;
-  const isDashboard = pathname === "/" || pathname === "/dashboard";
-
-  // Reset "already shown" when leaving dashboard so the toast shows again on next visit
-  useEffect(() => {
-    if (!isDashboard) licenseToastShownRef.current = false;
-  }, [isDashboard]);
-
-  // On dashboard: fetch profile from API (same as profile page) and show toast if license expiring/expired
-  useEffect(() => {
-    if (!isDashboard || isPublicRoute || !auth?.user || !auth?.session?.access_token || licenseToastShownRef.current) return;
-    let cancelled = false;
-    const t = setTimeout(() => {
-      fetch("/api/profile", { headers: { Authorization: `Bearer ${auth.session!.access_token}` } })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (cancelled || !data?.profile || licenseToastShownRef.current) return;
-          if (shouldShowLicenseWarning(data.profile)) {
-            licenseToastShownRef.current = true;
-            setLicenseToastPhase("show");
-          }
-        })
-        .catch(() => {});
-    }, 600);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [isDashboard, isPublicRoute, auth?.user?.id, auth?.session?.access_token]);
-
-  useEffect(() => {
-    if (licenseToastPhase === "show") {
-      const t = setTimeout(() => setLicenseToastPhase("fadeout"), 4500);
-      return () => clearTimeout(t);
-    }
-    if (licenseToastPhase === "fadeout") {
-      const t = setTimeout(() => setLicenseToastPhase("idle"), 400);
-      return () => clearTimeout(t);
-    }
-  }, [licenseToastPhase]);
 
   if (isPublicSummary || isSetPassword || isLogin) {
     return <>{children}</>;
@@ -117,43 +74,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navigation />
-      {licenseToastPhase !== "idle" && licenseExpiring && (
-        <div
-          className="no-print fixed left-1/2 top-4 z-[100] -translate-x-1/2 transition-opacity duration-300 ease-out"
-          style={{ opacity: licenseToastPhase === "fadeout" ? 0 : 1 }}
-          role="alert"
-        >
-          <div
-            className={`rounded-lg border px-4 py-3 shadow-lg ${
-              licenseExpired
-                ? "border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900/95"
-                : "border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/95"
-            }`}
-          >
-            <p
-              className={`text-sm font-medium ${
-                licenseExpired ? "text-red-800 dark:text-red-200" : "text-amber-800 dark:text-amber-200"
-              }`}
-            >
-              {licenseExpired
-                ? "Your license has expired. Please update your license information."
-                : profile?.license_expiry || (profile as { license_expiry?: string })?.license_expiry
-                  ? "Your license expires within 30 days or has expired. Please update your license information."
-                  : "Please set your license expiry date in your profile so chart signing stays accurate."}
-            </p>
-            <Link
-              href="/profile"
-              className={`mt-2 inline-block text-sm font-medium underline ${
-                licenseExpired
-                  ? "text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200"
-                  : "text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
-              }`}
-            >
-              Update profile →
-            </Link>
-          </div>
-        </div>
-      )}
       {showLicenseWarning && (
         <div
           className={`no-print border-b ${
