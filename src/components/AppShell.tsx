@@ -18,17 +18,34 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isPublicSummary = pathname != null && pathname.startsWith("/summary");
   const isLogin = pathname === "/login";
   const isAuthCallback = pathname != null && pathname.startsWith("/auth/callback");
+  const isAccountDisabled = pathname === "/account-disabled";
+  const isSetPassword = pathname === "/set-password";
 
-  const isPublicRoute = isPublicSummary || isLogin || isAuthCallback;
+  const isAdminRoute = pathname === "/admin";
+  const isPublicRoute = isPublicSummary || isLogin || isAuthCallback || isAccountDisabled;
+
+  const mustResetPassword = (auth?.user as { app_metadata?: { must_reset_password?: boolean } } | undefined)?.app_metadata?.must_reset_password === true;
 
   useEffect(() => {
     if (!isSupabaseConfigured() || auth?.loading || isPublicRoute) return;
     if (!auth?.user) {
       router.replace("/login");
+      return;
     }
-  }, [auth?.loading, auth?.user, isPublicRoute, router]);
+    if (mustResetPassword && !isSetPassword) {
+      router.replace("/set-password");
+      return;
+    }
+    if (auth.profile && !auth.isActive) {
+      router.replace("/account-disabled");
+      return;
+    }
+    if (isAdminRoute && auth.profile && !auth.isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, auth?.isAdmin, isPublicRoute, isAdminRoute, isSetPassword, mustResetPassword, router]);
 
-  if (isPublicSummary) {
+  if (isPublicSummary || isSetPassword) {
     return <>{children}</>;
   }
 
@@ -36,6 +53,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <p className="text-gray-600 dark:text-gray-400">Redirecting to sign in…</p>
+      </div>
+    );
+  }
+
+  if (mustResetPassword && !isSetPassword) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <p className="text-gray-600 dark:text-gray-400">Redirecting to set password…</p>
       </div>
     );
   }

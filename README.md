@@ -31,6 +31,8 @@ Open [1 ](http://localhost:3000) with your browser.
 
 Create a `.env.local` file in the project root for local development (see [Next.js env docs](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables)).
 
+**Admin-only access (no self sign-up):** Only admins can create users. In **Supabase Dashboard → Authentication → Providers → Email**, turn **off** “Enable email signup” so new users cannot register themselves. Admins create users from the Admin page; the system sends a temporary password (via email if `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set) and the user must set a new password on first sign-in.
+
 ### Data storage (current state)
 
 - **Patients, encounters, audit log** – Currently stored in the browser’s **localStorage** (no shared server DB yet). Use the Dashboard “Reset demo data” to repopulate sample data.  

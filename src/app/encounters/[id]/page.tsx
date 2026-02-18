@@ -10,6 +10,7 @@ import { newId, nowIso } from "@/lib/ids";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { encounterRowToEncounter, encounterToRow, patientRowToPatient, patientToRow } from "@/lib/supabaseMappers";
+import { useAuth } from "@/contexts/AuthContext";
 
 const IV_SITES = [
   { value: "", label: "Select site..." },
@@ -129,20 +130,41 @@ type Tab = NurseTabId | "provider" | "addendum";
 const ROLE_STORAGE_KEY_NURSE = "revive_current_nurse_name";
 const ROLE_STORAGE_KEY_PROVIDER = "revive_current_provider_name";
 
+type Role = "nurse" | "provider";
+
+function profileRoleToUiRole(role: string | null): Role {
+  if (role === "provider") return "provider";
+  if (role === "nursing") return "nurse";
+  return "nurse";
+}
+
 export default function EncounterPage() {
   const params = useParams();
   const router = useRouter();
+  const auth = useAuth();
   const encounterId = params.id as string;
+
+  const profileRole = auth?.role ?? null;
+  const canSwitchRole = profileRole === "admin";
+  const lockedRole = profileRole === "nursing" || profileRole === "provider" ? profileRoleToUiRole(profileRole) : null;
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("intake");
   const [isLoading, setIsLoading] = useState(true);
 
-  type Role = "nurse" | "provider";
-  const [currentRole, setCurrentRole] = useState<Role>("nurse");
+  const [currentRole, setCurrentRoleState] = useState<Role>("nurse");
+  const currentRole = lockedRole ?? currentRoleState;
+  const setCurrentRole = (r: Role) => {
+    if (canSwitchRole) setCurrentRoleState(r);
+  };
+
   const [nurseName, setNurseName] = useState("");
   const [providerName, setProviderName] = useState("");
+
+  useEffect(() => {
+    if (lockedRole != null) setCurrentRoleState(lockedRole);
+  }, [lockedRole]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -850,10 +872,11 @@ export default function EncounterPage() {
           </div>
         ) : (
         <>
-        {/* Role switcher: Nurse sees only nursing tabs; Provider sees only provider section */}
+        {/* Role switcher: only admins can switch; nursing/provider users see only their section */}
+        {canSwitchRole && (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Access as — nurses see nursing record only; providers see provider section only
+            Access as — admins can switch; nursing and provider users see only their section
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex rounded-md border border-gray-200 dark:border-gray-600">
@@ -905,6 +928,34 @@ export default function EncounterPage() {
             )}
           </div>
         </div>
+        )}
+        {!canSwitchRole && (
+          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            {currentRole === "nurse" ? (
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 dark:text-gray-400">Nursing documentation · sign as:</label>
+                <input
+                  type="text"
+                  value={nurseName}
+                  onChange={(e) => persistNurseName(e.target.value)}
+                  placeholder="e.g. Jane Nurse"
+                  className="w-48 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 dark:text-gray-400">Provider documentation · sign as:</label>
+                <input
+                  type="text"
+                  value={providerName}
+                  onChange={(e) => persistProviderName(e.target.value)}
+                  placeholder="e.g. Dr. Smith"
+                  className="w-48 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex gap-4 overflow-x-auto">
