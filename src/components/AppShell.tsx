@@ -55,11 +55,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   licenseExpiringRef.current = licenseExpiring;
   const isDashboard = pathname === "/" || pathname === "/dashboard";
 
+  // Reset "already shown" when leaving dashboard so the toast shows again on next visit
   useEffect(() => {
-    if (isLogin) licenseToastShownRef.current = false;
-  }, [isLogin]);
+    if (!isDashboard) licenseToastShownRef.current = false;
+  }, [isDashboard]);
 
-  // Show toast when we're on dashboard and license is expiring. Poll until profile loads (it's async after login).
+  // Show toast every time we're on dashboard and license is expiring/expired. Poll until profile loads (async after login).
   useEffect(() => {
     if (!isDashboard || isPublicRoute || !auth?.user) return;
     const intervalMs = 400;
