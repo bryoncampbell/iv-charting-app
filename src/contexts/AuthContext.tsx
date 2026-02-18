@@ -15,6 +15,7 @@ type AuthContextValue = {
   loading: boolean;
   signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
+  sendPasswordResetEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -80,6 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error ?? null };
   }, []);
 
+  const sendPasswordResetEmail = useCallback(async (email: string) => {
+    if (!supabase) return { error: new Error("Supabase not configured") };
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${origin}/auth/callback`,
+    });
+    return { error: error ?? null };
+  }, []);
+
   const signOut = useCallback(async () => {
     if (supabase) await supabase.auth.signOut();
     setUser(null);
@@ -101,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signInWithPassword,
     signInWithMagicLink,
+    sendPasswordResetEmail,
     signOut,
   };
 

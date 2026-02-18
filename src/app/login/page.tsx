@@ -55,7 +55,7 @@ function LoginContent() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error: err } = await auth!.signInWithMagicLink(email.trim());
+    const { error: err } = await auth!.sendPasswordResetEmail(email.trim());
     setLoading(false);
     if (err) {
       setError(err.message);
