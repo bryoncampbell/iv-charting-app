@@ -367,15 +367,16 @@ export default function EncounterPage() {
     };
 
     if (isSupabaseConfigured() && supabase) {
-      return Promise.resolve(
-        supabase
-          .from("encounters")
-          .upsert(encounterToRow(merged), { onConflict: "id" })
-          .then(({ error }) => {
-            if (error) console.error("Error saving encounter to Supabase:", error);
-            else setEncounter(merged);
-          })
-      );
+      return supabase
+        .from("encounters")
+        .upsert(encounterToRow(merged), { onConflict: "id" })
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error saving encounter to Supabase:", error);
+            return Promise.reject(error);
+          }
+          setEncounter(merged);
+        });
     }
 
     try {
@@ -620,18 +621,25 @@ export default function EncounterPage() {
       return;
     }
     const cancelledBy = currentRole === "nurse" ? (nurseName.trim() || "Nurse") : (providerName.trim() || "Provider");
-    setStatus("cancelled");
-    setShowCancelModal(false);
-    setCancellationReasonInput("");
     setValidationErrors([]);
-    await saveEncounter({
-      status: "cancelled",
-      cancelledAt: nowIso(),
-      cancelledBy,
-      cancellationReason: reason,
-    });
-    if (encounter) logAudit("encounter.cancelled", "encounter", encounter.id, undefined);
-    router.push("/visits");
+    try {
+      setStatus("cancelled");
+      setShowCancelModal(false);
+      await saveEncounter({
+        status: "cancelled",
+        cancelledAt: nowIso(),
+        cancelledBy,
+        cancellationReason: reason,
+      });
+      setCancellationReasonInput("");
+      if (encounter) logAudit("encounter.cancelled", "encounter", encounter.id, undefined);
+      router.push("/visits");
+    } catch (e) {
+      setStatus(encounter?.status ?? "in_progress");
+      setShowCancelModal(true);
+      const msg = (e as { message?: string })?.message ?? "Failed to cancel visit.";
+      setValidationErrors([msg + " If you use created_by scoping, run supabase/auth-admin-see-all.sql so all roles can update visits."]);
+    }
   };
 
   const orderApproved = !!(administration.orderApprovedAt && administration.orderApprovedBy);

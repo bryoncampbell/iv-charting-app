@@ -28,3 +28,5 @@ create policy "Users own encounters"
 
 -- Optional: allow anon for share_summaries and any public read; keep audit_log as-is.
 -- (share_summaries and audit_log are unchanged by this file.)
+--
+-- To let all roles (nursing, provider, admin) see all visits/patients, run auth-admin-see-all.sql next.
