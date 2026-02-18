@@ -42,7 +42,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Admin access is enforced by the admin page via API (so admins whose profile didn't load can still get in)
   }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, isPublicRoute, isSetPassword, mustResetPassword, router]);
 
-  if (isPublicSummary || isSetPassword) {
+  if (isPublicSummary || isSetPassword || isLogin) {
     return <>{children}</>;
   }
 
