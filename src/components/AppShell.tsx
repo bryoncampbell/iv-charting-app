@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
+import { isLicenseExpiringSoon } from "@/types/profile";
 
 /**
  * Wraps app content and shows main app navigation only on internal routes.
@@ -62,9 +64,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const showLicenseWarning = auth?.profile && isLicenseExpiringSoon(auth.profile.license_expiry);
+
   return (
     <>
       <Navigation />
+      {showLicenseWarning && (
+        <div className="no-print bg-amber-100 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700">
+          <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              Your license expires within 30 days or has expired. Please update your license information so chart signing remains accurate.
+            </p>
+            <Link
+              href="/profile"
+              className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600"
+            >
+              Update profile
+            </Link>
+          </div>
+        </div>
+      )}
       <main className="pb-20 md:pb-0">{children}</main>
     </>
   );

@@ -10,4 +10,40 @@ export interface Profile {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  date_of_birth: string | null;
+  phone: string | null;
+  street_address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  license_type: string | null;
+  license_number: string | null;
+  license_state: string | null;
+  license_expiry: string | null;
+}
+
+/** Build display label for chart signing, e.g. "Jane Doe, RN #12345 (TX)" or "Jane Doe". */
+export function profileSigningLabel(p: Pick<Profile, "first_name" | "last_name" | "license_type" | "license_number" | "license_state"> | null): string {
+  if (!p) return "";
+  const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+  const lic = p.license_type?.trim();
+  const licNum = p.license_number?.trim();
+  const licState = p.license_state?.trim();
+  const licensePart = lic ? `, ${lic}${licNum ? ` #${licNum}` : ""}${licState ? ` (${licState})` : ""}` : "";
+  return name ? `${name}${licensePart}` : (licensePart ? licensePart.replace(/^, /, "") : "");
+}
+
+/** True if license_expiry is set and within 30 days of today or already past. Use to warn user to update license. */
+export function isLicenseExpiringSoon(licenseExpiry: string | null | undefined): boolean {
+  if (!licenseExpiry?.trim()) return false;
+  const expiry = new Date(licenseExpiry.trim());
+  if (Number.isNaN(expiry.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysUntil = Math.round((expiry.getTime() - today.getTime()) / msPerDay);
+  return daysUntil <= 30;
 }

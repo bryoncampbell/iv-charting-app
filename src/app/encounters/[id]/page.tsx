@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Administration, Encounter, Patient, Vital } from "@/types";
 import { getPatientDisplayName } from "@/types";
+import { profileSigningLabel } from "@/types/profile";
 import { logAudit } from "@/lib/audit";
 import { newId, nowIso } from "@/lib/ids";
 import { STORAGE_KEYS } from "@/lib/storage";
@@ -175,18 +176,25 @@ export default function EncounterPage() {
     setProviderName(localStorage.getItem(ROLE_STORAGE_KEY_PROVIDER) ?? "");
   }, []);
 
-  // When signed in as provider, pre-fill "sign as" from profile display name if empty
+  // Pre-fill "sign as" from profile (name + license) when stored value is empty
+  const signingLabel = profileSigningLabel(auth?.profile ?? null);
   useEffect(() => {
-    const displayName = auth?.profile?.display_name?.trim();
-    if (lockedRole !== "provider" || !displayName) return;
+    if (!signingLabel) return;
+    setNurseName((prev) => {
+      if (prev.trim()) return prev;
+      try {
+        localStorage.setItem(ROLE_STORAGE_KEY_NURSE, signingLabel);
+      } catch {}
+      return signingLabel;
+    });
     setProviderName((prev) => {
       if (prev.trim()) return prev;
       try {
-        localStorage.setItem(ROLE_STORAGE_KEY_PROVIDER, displayName);
+        localStorage.setItem(ROLE_STORAGE_KEY_PROVIDER, signingLabel);
       } catch {}
-      return displayName;
+      return signingLabel;
     });
-  }, [lockedRole, auth?.profile?.display_name]);
+  }, [signingLabel]);
   const persistNurseName = (name: string) => {
     setNurseName(name);
     try {

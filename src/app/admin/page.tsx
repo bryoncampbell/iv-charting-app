@@ -15,6 +15,18 @@ type AdminUser = {
   display_name: string | null;
   is_active: boolean;
   profile_updated_at: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  date_of_birth?: string | null;
+  phone?: string | null;
+  street_address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  license_type?: string | null;
+  license_number?: string | null;
+  license_state?: string | null;
+  license_expiry?: string | null;
 };
 
 function getAuthHeaders(session: { access_token: string }): HeadersInit {
@@ -34,10 +46,24 @@ export default function AdminPage() {
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
   const [createEmail, setCreateEmail] = useState("");
   const [createDisplayName, setCreateDisplayName] = useState("");
+  const [createFirstName, setCreateFirstName] = useState("");
+  const [createLastName, setCreateLastName] = useState("");
+  const [createDob, setCreateDob] = useState("");
+  const [createPhone, setCreatePhone] = useState("");
+  const [createStreetAddress, setCreateStreetAddress] = useState("");
+  const [createCity, setCreateCity] = useState("");
+  const [createState, setCreateState] = useState("");
+  const [createZipCode, setCreateZipCode] = useState("");
+  const [createLicenseType, setCreateLicenseType] = useState("");
+  const [createLicenseNumber, setCreateLicenseNumber] = useState("");
+  const [createLicenseState, setCreateLicenseState] = useState("");
+  const [createLicenseExpiry, setCreateLicenseExpiry] = useState("");
   const [createRole, setCreateRole] = useState<AppRole>("nursing");
   const [creating, setCreating] = useState(false);
   const [createResult, setCreateResult] = useState<{ email: string; temporary_password: string; email_sent: boolean } | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+  const [editProfileForm, setEditProfileForm] = useState<Partial<AdminUser>>({});
 
   useEffect(() => {
     if (!auth?.session?.access_token || !auth?.user) {
@@ -149,6 +175,18 @@ export default function AdminPage() {
           email: createEmail.trim(),
           display_name: createDisplayName.trim() || undefined,
           role: createRole,
+          first_name: createFirstName.trim() || undefined,
+          last_name: createLastName.trim() || undefined,
+          date_of_birth: createDob.trim() || undefined,
+          phone: createPhone.trim() || undefined,
+          street_address: createStreetAddress.trim() || undefined,
+          city: createCity.trim() || undefined,
+          state: createState.trim() || undefined,
+          zip_code: createZipCode.trim() || undefined,
+          license_type: createLicenseType.trim() || undefined,
+          license_number: createLicenseNumber.trim() || undefined,
+          license_state: createLicenseState.trim() || undefined,
+          license_expiry: createLicenseExpiry.trim() || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -158,13 +196,100 @@ export default function AdminPage() {
         temporary_password: data.temporary_password ?? "",
         email_sent: data.email_sent ?? false,
       });
+      const newUser: AdminUser = {
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.role,
+        display_name: data.user.display_name,
+        is_active: true,
+        created_at: "",
+        last_sign_in_at: undefined,
+        banned_until: undefined,
+        profile_updated_at: null,
+        first_name: createFirstName.trim() || null,
+        last_name: createLastName.trim() || null,
+        date_of_birth: createDob.trim() || null,
+        phone: createPhone.trim() || null,
+        street_address: createStreetAddress.trim() || null,
+        city: createCity.trim() || null,
+        state: createState.trim() || null,
+        zip_code: createZipCode.trim() || null,
+        license_type: createLicenseType.trim() || null,
+        license_number: createLicenseNumber.trim() || null,
+        license_state: createLicenseState.trim() || null,
+        license_expiry: createLicenseExpiry.trim() || null,
+      };
       setCreateEmail("");
       setCreateDisplayName("");
-      setUsers((prev) => [...prev, { id: data.user.id, email: data.user.email, role: data.user.role, display_name: data.user.display_name, is_active: true, created_at: "", last_sign_in_at: undefined, banned_until: undefined, profile_updated_at: null }]);
+      setCreateFirstName("");
+      setCreateLastName("");
+      setCreateDob("");
+      setCreatePhone("");
+      setCreateStreetAddress("");
+      setCreateCity("");
+      setCreateState("");
+      setCreateZipCode("");
+      setCreateLicenseType("");
+      setCreateLicenseNumber("");
+      setCreateLicenseState("");
+      setCreateLicenseExpiry("");
+      setUsers((prev) => [...prev, newUser]);
     } catch (e) {
       alert((e as Error).message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const openEditProfile = (u: AdminUser) => {
+    setEditingProfileId(u.id);
+    setEditProfileForm({
+      first_name: u.first_name ?? "",
+      last_name: u.last_name ?? "",
+      date_of_birth: u.date_of_birth ?? "",
+      phone: u.phone ?? "",
+      street_address: u.street_address ?? "",
+      city: u.city ?? "",
+      state: u.state ?? "",
+      zip_code: u.zip_code ?? "",
+      license_type: u.license_type ?? "",
+      license_number: u.license_number ?? "",
+      license_state: u.license_state ?? "",
+      license_expiry: u.license_expiry ?? "",
+      display_name: u.display_name ?? "",
+    });
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editingProfileId || !auth?.session?.access_token) return;
+    try {
+      const res = await fetch(`/api/admin/users/${editingProfileId}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(auth.session),
+        body: JSON.stringify({
+          display_name: editProfileForm.display_name?.trim() || null,
+          first_name: editProfileForm.first_name?.trim() || null,
+          last_name: editProfileForm.last_name?.trim() || null,
+          date_of_birth: editProfileForm.date_of_birth?.trim() || null,
+          phone: editProfileForm.phone?.trim() || null,
+          street_address: editProfileForm.street_address?.trim() || null,
+          city: editProfileForm.city?.trim() || null,
+          state: editProfileForm.state?.trim() || null,
+          zip_code: editProfileForm.zip_code?.trim() || null,
+          license_type: editProfileForm.license_type?.trim() || null,
+          license_number: editProfileForm.license_number?.trim() || null,
+          license_state: editProfileForm.license_state?.trim() || null,
+          license_expiry: editProfileForm.license_expiry?.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? res.statusText);
+      }
+      setUsers((prev) => prev.map((u) => (u.id === editingProfileId ? { ...u, ...editProfileForm } : u)));
+      setEditingProfileId(null);
+    } catch (e) {
+      alert((e as Error).message);
     }
   };
 
@@ -262,46 +387,82 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
             </div>
           )}
           {!createResult && (
-            <form onSubmit={handleCreateUser} className="mt-4 flex flex-wrap items-end gap-4">
+            <form onSubmit={handleCreateUser} className="mt-4 space-y-6">
               <div>
-                <label htmlFor="create-email" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Email</label>
-                <input
-                  id="create-email"
-                  type="email"
-                  value={createEmail}
-                  onChange={(e) => setCreateEmail(e.target.value)}
-                  required
-                  className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                />
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Login & role</p>
+                <div className="flex flex-wrap items-end gap-4">
+                  <div>
+                    <label htmlFor="create-email" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Email *</label>
+                    <input id="create-email" type="email" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} required className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-52" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-display-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Display name</label>
+                    <input id="create-display-name" type="text" value={createDisplayName} onChange={(e) => setCreateDisplayName(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-40" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-role" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Role</label>
+                    <select id="create-role" value={createRole} onChange={(e) => setCreateRole(e.target.value as AppRole)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                      <option value="nursing">Nursing</option>
+                      <option value="provider">Provider</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
               </div>
               <div>
-                <label htmlFor="create-display-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Display name (optional)</label>
-                <input
-                  id="create-display-name"
-                  type="text"
-                  value={createDisplayName}
-                  onChange={(e) => setCreateDisplayName(e.target.value)}
-                  className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                />
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Profile (optional) — used for chart signing</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label htmlFor="create-first-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400">First name</label>
+                    <input id="create-first-name" type="text" value={createFirstName} onChange={(e) => setCreateFirstName(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-last-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Last name</label>
+                    <input id="create-last-name" type="text" value={createLastName} onChange={(e) => setCreateLastName(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-dob" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Date of birth</label>
+                    <input id="create-dob" type="date" value={createDob} onChange={(e) => setCreateDob(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-phone" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                    <input id="create-phone" type="tel" value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} placeholder="(555) 123-4567" className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="create-street" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Street address</label>
+                    <input id="create-street" type="text" value={createStreetAddress} onChange={(e) => setCreateStreetAddress(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-city" className="block text-xs font-medium text-gray-500 dark:text-gray-400">City</label>
+                    <input id="create-city" type="text" value={createCity} onChange={(e) => setCreateCity(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-state" className="block text-xs font-medium text-gray-500 dark:text-gray-400">State</label>
+                    <input id="create-state" type="text" value={createState} onChange={(e) => setCreateState(e.target.value)} placeholder="e.g. TX" className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-zip" className="block text-xs font-medium text-gray-500 dark:text-gray-400">ZIP code</label>
+                    <input id="create-zip" type="text" value={createZipCode} onChange={(e) => setCreateZipCode(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-license-type" className="block text-xs font-medium text-gray-500 dark:text-gray-400">License type</label>
+                    <input id="create-license-type" type="text" value={createLicenseType} onChange={(e) => setCreateLicenseType(e.target.value)} placeholder="e.g. RN, LPN, MD" className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-license-number" className="block text-xs font-medium text-gray-500 dark:text-gray-400">License number</label>
+                    <input id="create-license-number" type="text" value={createLicenseNumber} onChange={(e) => setCreateLicenseNumber(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-license-state" className="block text-xs font-medium text-gray-500 dark:text-gray-400">License state</label>
+                    <input id="create-license-state" type="text" value={createLicenseState} onChange={(e) => setCreateLicenseState(e.target.value)} placeholder="e.g. TX" className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="create-license-expiry" className="block text-xs font-medium text-gray-500 dark:text-gray-400">License expiry</label>
+                    <input id="create-license-expiry" type="date" value={createLicenseExpiry} onChange={(e) => setCreateLicenseExpiry(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-full" />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label htmlFor="create-role" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Role</label>
-                <select
-                  id="create-role"
-                  value={createRole}
-                  onChange={(e) => setCreateRole(e.target.value as AppRole)}
-                  className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                >
-                  <option value="nursing">Nursing</option>
-                  <option value="provider">Provider</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              <button
-                type="submit"
-                disabled={creating}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
+              <button type="submit" disabled={creating} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
                 {creating ? "Creating…" : "Create user"}
               </button>
             </form>
@@ -321,6 +482,7 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Name</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Role</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Status</th>
@@ -331,6 +493,9 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {users.map((u) => (
                   <tr key={u.id} className={!u.is_active ? "bg-gray-100 dark:bg-gray-800/50" : ""}>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.display_name || "—"}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                       {u.email ?? "(no email)"}
                       {u.id === auth.user?.id && <span className="ml-2 text-gray-500">(you)</span>}
@@ -360,6 +525,13 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                         : "—"}
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
+                      <button
+                        type="button"
+                        onClick={() => openEditProfile(u)}
+                        className="text-gray-600 dark:text-gray-400 hover:underline mr-3"
+                      >
+                        Edit profile
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleSendPasswordReset(u.id)}
@@ -402,6 +574,83 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Edit profile modal */}
+        {editingProfileId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingProfileId(null)}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit profile</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Name, address, and license info are used when signing chart actions.</p>
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">First name</label>
+                    <input type="text" value={editProfileForm.first_name ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, first_name: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Last name</label>
+                    <input type="text" value={editProfileForm.last_name ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, last_name: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Display name</label>
+                  <input type="text" value={editProfileForm.display_name ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, display_name: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Date of birth</label>
+                  <input type="date" value={editProfileForm.date_of_birth ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, date_of_birth: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                  <input type="tel" value={editProfileForm.phone ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, phone: e.target.value }))} placeholder="(555) 123-4567" className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Street address</label>
+                  <input type="text" value={editProfileForm.street_address ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, street_address: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">City</label>
+                    <input type="text" value={editProfileForm.city ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, city: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">State</label>
+                    <input type="text" value={editProfileForm.state ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, state: e.target.value }))} placeholder="TX" className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">ZIP</label>
+                    <input type="text" value={editProfileForm.zip_code ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, zip_code: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                  </div>
+                </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">License (for chart signing)</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Type</label>
+                      <input type="text" value={editProfileForm.license_type ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, license_type: e.target.value }))} placeholder="RN, LPN, MD" className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Number</label>
+                      <input type="text" value={editProfileForm.license_number ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, license_number: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">State</label>
+                      <input type="text" value={editProfileForm.license_state ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, license_state: e.target.value }))} placeholder="TX" className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Expiry</label>
+                      <input type="date" value={editProfileForm.license_expiry ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, license_expiry: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <button type="button" onClick={() => setEditingProfileId(null)} className="rounded border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
+                <button type="button" onClick={handleSaveProfile} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Save</button>
+              </div>
+            </div>
           </div>
         )}
       </div>

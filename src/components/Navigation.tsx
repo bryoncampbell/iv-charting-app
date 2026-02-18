@@ -15,6 +15,7 @@ export default function Navigation() {
     { href: "/visits", label: "Visits", icon: "📋" },
     { href: "/reports", label: "Reports", icon: "📈" },
     { href: "/audit", label: "Audit Log", icon: "📜" },
+    ...(auth?.user ? [{ href: "/profile", label: "Profile", icon: "👤" } as const] : []),
     ...(auth?.user ? [{ href: "/admin", label: "Admin", icon: "⚙️" } as const] : []),
   ];
 

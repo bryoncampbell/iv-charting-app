@@ -17,6 +17,7 @@ type AuthContextValue = {
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
   sendPasswordResetEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -97,6 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
   }, []);
 
+  const refreshProfile = useCallback(async () => {
+    if (user?.id) await loadProfile(user.id);
+  }, [user?.id, loadProfile]);
+
   const role = profile?.role ?? null;
   const isAdmin = profile?.role === "admin" && (profile?.is_active ?? false);
   const isActive = profile?.is_active ?? true;
@@ -113,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithMagicLink,
     sendPasswordResetEmail,
     signOut,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

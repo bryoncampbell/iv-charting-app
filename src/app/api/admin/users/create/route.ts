@@ -53,6 +53,18 @@ export async function POST(request: NextRequest) {
     const role = typeof body.role === "string" && ["nursing", "provider", "admin"].includes(body.role)
       ? (body.role as AppRole)
       : "nursing";
+    const first_name = typeof body.first_name === "string" ? body.first_name.trim() || null : null;
+    const last_name = typeof body.last_name === "string" ? body.last_name.trim() || null : null;
+    const date_of_birth = typeof body.date_of_birth === "string" ? body.date_of_birth.trim() || null : null;
+    const phone = typeof body.phone === "string" ? body.phone.trim() || null : null;
+    const street_address = typeof body.street_address === "string" ? body.street_address.trim() || null : null;
+    const city = typeof body.city === "string" ? body.city.trim() || null : null;
+    const state = typeof body.state === "string" ? body.state.trim() || null : null;
+    const zip_code = typeof body.zip_code === "string" ? body.zip_code.trim() || null : null;
+    const license_type = typeof body.license_type === "string" ? body.license_type.trim() || null : null;
+    const license_number = typeof body.license_number === "string" ? body.license_number.trim() || null : null;
+    const license_state = typeof body.license_state === "string" ? body.license_state.trim() || null : null;
+    const license_expiry = typeof body.license_expiry === "string" ? body.license_expiry.trim() || null : null;
 
     const tempPassword = generateTempPassword();
     const { data: newUser, error } = await supabaseAdmin.auth.admin.createUser({
@@ -65,6 +77,24 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     if (!newUser?.user) return NextResponse.json({ error: "User not created" }, { status: 500 });
 
+    await supabaseAdmin.from("profiles").update({
+      email,
+      display_name: displayName ?? [first_name, last_name].filter(Boolean).join(" ") || null,
+      first_name,
+      last_name,
+      date_of_birth: date_of_birth || null,
+      phone,
+      street_address,
+      city,
+      state,
+      zip_code,
+      license_type,
+      license_number,
+      license_state,
+      license_expiry: license_expiry || null,
+      updated_at: new Date().toISOString(),
+    }).eq("user_id", newUser.user.id);
+
     const emailSent = await sendWelcomeEmail(email, tempPassword, "RevIVe Hydration and Recovery");
 
     return NextResponse.json({
@@ -72,7 +102,7 @@ export async function POST(request: NextRequest) {
         id: newUser.user.id,
         email: newUser.user.email,
         role,
-        display_name: displayName ?? null,
+        display_name: displayName ?? [first_name, last_name].filter(Boolean).join(" ") || null,
       },
       temporary_password: tempPassword,
       email_sent: emailSent,
