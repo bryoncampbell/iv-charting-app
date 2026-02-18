@@ -23,14 +23,8 @@ export default function SetPasswordPage() {
       </div>
     );
   }
-  if (!mustReset) {
-    router.replace("/dashboard");
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <p className="text-gray-600 dark:text-gray-400">Redirecting…</p>
-      </div>
-    );
-  }
+  // Show form for: first-time temp password (must_reset) or landing from "Forgot password" link (recovery)
+  // No redirect to dashboard here — user must set a new password on this page
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,14 +48,16 @@ export default function SetPasswordPage() {
       setLoading(false);
       return;
     }
-    const res = await fetch("/api/auth/clear-must-reset", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${auth.session?.access_token}` },
-    });
-    if (!res.ok) {
-      setError("Could not complete setup. Try signing in again.");
-      setLoading(false);
-      return;
+    if (mustReset) {
+      const res = await fetch("/api/auth/clear-must-reset", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${auth.session?.access_token}` },
+      });
+      if (!res.ok) {
+        setError("Could not complete setup. Try signing in again.");
+        setLoading(false);
+        return;
+      }
     }
     setLoading(false);
     router.replace("/dashboard");
@@ -72,7 +68,9 @@ export default function SetPasswordPage() {
       <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-md w-full">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Set your password</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          You must set a new password before continuing. This replaces your temporary password.
+          {mustReset
+            ? "You must set a new password before continuing. This replaces your temporary password."
+            : "Choose a new password. You’ll use it to sign in from now on."}
         </p>
         {error && (
           <div className="mt-4 rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-800 dark:text-red-300">
