@@ -24,10 +24,14 @@ export async function assertAdmin(
   const client = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
+  const { data: { user }, error: userError } = await client.auth.getUser(token);
+  if (userError || !user?.id) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
   const { data: profile, error: profileError } = await client
     .from("profiles")
     .select("user_id, role, is_active")
-    .limit(1)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (profileError || !profile) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
