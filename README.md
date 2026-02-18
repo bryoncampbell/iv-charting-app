@@ -33,63 +33,36 @@ Create a `.env.local` file in the project root for local development (see [Next.
 
 **Admin-only access (no self sign-up):** Only admins can create users. In **Supabase Dashboard → Authentication → Providers → Email**, turn **off** “Enable email signup” so new users cannot register themselves. Admins create users from the Admin page; the system sends a temporary password (via email if `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set) and the user must set a new password on first sign-in.
 
-### Data storage (current state)
+### Data storage
 
-- **Patients, encounters, audit log** – Currently stored in the browser’s **localStorage** (no shared server DB yet). Use the Dashboard “Reset demo data” to repopulate sample data.  
-  This is fine for local development and demos, but **not suitable for PHI / HIPAA**.
-- **Shared visit summaries** – When Supabase is configured, share links are stored in the **`share_summaries`** table (run `supabase/share-summaries.sql` in Supabase SQL Editor once) so “Share link” / “Text link” work across Vercel serverless instances. Otherwise a file-based store is used (single-server only).
+- **Patients, encounters, audit log** – When Supabase is configured, data is stored in **Supabase (Postgres)** and shared across users. The app uses Supabase for visits, encounters, patients, and audit; localStorage is only used as a fallback when Supabase is not configured (e.g. local dev without env vars). Use the Dashboard “Reset demo data” to clear and repopulate sample data (requires RLS policies from `supabase/auth-admin-see-all.sql`).
+- **Auth & profiles** – Supabase Auth + `profiles` table (roles: nursing, provider, admin). Run `supabase/profiles.sql` and optionally `supabase/auth-scope-created-by.sql` and `supabase/auth-admin-see-all.sql` for RLS.
+- **Shared visit summaries** – Share links are stored in **`share_summaries`** (run `supabase/share-summaries.sql` once). “Share link” / “Text link” work across instances.
 
 ---
 
 ## Hosting & backend roadmap (Path A: Vercel + Supabase)
 
-This is the working plan for making the app multi‑user and hosted, starting with the most beginner‑friendly / cost‑effective path.
+### Phase 1 – Host the app on Vercel
 
-### Phase 1 – Host the app as‑is on Vercel
+- **Goal:** Get a real URL to share.
+- **Steps:** Push the repo to GitHub → Vercel **New Project** → Import repo → set env vars (`NEXT_PUBLIC_APP_URL`, optional Twilio). Deploy.
 
-- **Goal:** Get a real URL to share (single‑browser data only).
-- **Steps:**
-  - Push the repo to GitHub.
-  - In Vercel: **New Project → Import from GitHub → select this repo**.
-  - Set env vars in Vercel:
-    - `NEXT_PUBLIC_APP_URL` (e.g. `https://your-app.vercel.app`)
-    - Optional Twilio vars for SMS: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
-  - Deploy.
+### Phase 2 – Supabase (shared DB, auth) — complete
 
-Result: The app is publicly reachable, but each browser still has its **own** data because storage is localStorage.
+- **Goal:** Shared data and auth across users. **Done:** the app uses Supabase as the source of truth for patients, encounters, audit log, and auth/profiles when configured.
+- **Setup (one-time):**
+  1. **Env vars** – `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and for admin/backend: `SUPABASE_SERVICE_ROLE_KEY`. Add in Vercel as needed.
+  2. **Tables** – Run in Supabase SQL Editor: **`supabase/schema.sql`** (creates `patients`, `encounters`, `audit_log`), then **`supabase/profiles.sql`**, **`supabase/rls-policies.sql`**. Optional: **`supabase/auth-scope-created-by.sql`** (scope by `created_by`) and **`supabase/auth-admin-see-all.sql`** (all roles see/update/delete all visits and patients).
+  3. **Share summaries** – Run **`supabase/share-summaries.sql`** for share links.
 
-### Phase 2 – Add Supabase (shared DB, simple auth)
+**Result:** localStorage is no longer the source of truth when Supabase is configured.
 
-- **Goal:** Shared data across users/locations using Supabase (Postgres + auth + optional realtime).
+### Phase 3 – Realtime visit status — complete
 
-**Setup (do this once):**
-
-1. **Env vars** – Copy `.env.example` to `.env.local` and set:
-   - `NEXT_PUBLIC_SUPABASE_URL` (Supabase Dashboard → Project Settings → API → Project URL)
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same page → anon public key)
-   - Add the same two vars in Vercel → Project → Settings → Environment Variables.
-
-2. **Tables** – In Supabase Dashboard → **SQL Editor** → New query, paste and run the contents of **`supabase/schema.sql`** in this repo. That creates `patients`, `encounters`, and `audit_log`.
-
-3. **Client** – The app already has `@supabase/supabase-js` and `src/lib/supabaseClient.ts`; no extra install needed.
-
-**Migration (code):**
-
-- **First screen to migrate:** `visits/page.tsx`
-    - Replace `localStorage.getItem(STORAGE_KEYS.encounters)` with `supabase.from("encounters").select("*")`.
-    - Show visits list from Supabase instead of localStorage.
-  - Then migrate:
-    - `encounters/[id]/page.tsx` (visit in progress) – reads/writes encounters via Supabase.
-    - `patients/page.tsx` and `patients/[id]/page.tsx` – list and profile via Supabase.
-    - `audit` – write audit events into `audit_log` instead of localStorage.
-
-At the end of Phase 2, **localStorage is no longer the source of truth** for patients/encounters.
-
-### Phase 3 – Realtime visit status (optional, via Supabase Realtime)
-
-- **Goal:** When one user updates a visit (status, order approved, infusion started, etc.), other users’ `Visits` page updates automatically.
-- **One-time setup:** In Supabase → **SQL Editor** → New query, run the contents of **`supabase/realtime-enable.sql`** (adds `encounters` to the Realtime publication). Or in **Database → Replication**, enable Realtime for the `encounters` table.
-- **App:** The Visits page subscribes to `postgres_changes` on `encounters` and refetches the list on any insert/update/delete, so the list stays in sync across tabs and users.
+- **Goal:** When one user updates a visit, other users’ Visits page updates automatically.
+- **One-time setup:** In Supabase → **SQL Editor**, run **`supabase/realtime-enable.sql`** (adds `encounters` to the Realtime publication). Or in **Database → Replication**, enable Realtime for the `encounters` table.
+- **App:** The Visits page already subscribes to `postgres_changes` on `encounters` and refetches the list on any insert/update/delete, so the list stays in sync across tabs and users.
 
 ### HIPAA note
 
