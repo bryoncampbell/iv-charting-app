@@ -20,10 +20,18 @@ function LoginContent() {
 
   if (!isSupabaseConfigured()) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-md w-full text-center">
-          <p className="text-gray-600 dark:text-gray-400">Sign-in is not configured. Use the app without logging in.</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-blue-600 dark:text-blue-400">Go to Dashboard</Link>
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900">
+        <header className="shrink-0 border-b border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-sm">
+          <div className="mx-auto max-w-4xl px-6 py-6 sm:py-8 text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800 dark:text-white">RevIVe Hydration and Recovery</h1>
+            <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400">IV therapy and wellness</p>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="rounded-2xl bg-white dark:bg-gray-800/95 shadow-xl border border-slate-200/60 dark:border-gray-700/60 p-8 max-w-md w-full text-center">
+            <p className="text-slate-600 dark:text-slate-400">Sign-in is not configured. Use the app without logging in.</p>
+            <Link href="/dashboard" className="mt-4 inline-block text-blue-600 dark:text-blue-400 font-medium hover:underline">Go to Dashboard</Link>
+          </div>
         </div>
       </div>
     );
@@ -32,8 +40,15 @@ function LoginContent() {
   if (auth?.user) {
     router.replace(redirect);
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <p className="text-gray-600 dark:text-gray-400">Redirecting…</p>
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900">
+        <header className="shrink-0 border-b border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-sm">
+          <div className="mx-auto max-w-4xl px-6 py-6 sm:py-8 text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800 dark:text-white">RevIVe Hydration and Recovery</h1>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <p className="text-slate-600 dark:text-slate-400">Redirecting…</p>
+        </div>
       </div>
     );
   }
@@ -68,80 +83,99 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-      <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-md w-full">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Sign in</h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">RevIVe Hydration and Recovery. Access is by invitation only.</p>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900">
+      {/* Banner */}
+      <header className="shrink-0 border-b border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-sm">
+        <div className="mx-auto max-w-4xl px-6 py-6 sm:py-8 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800 dark:text-white">
+            RevIVe Hydration and Recovery
+          </h1>
+          <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400">
+            IV therapy and wellness — sign in to access your account
+          </p>
+        </div>
+      </header>
 
-        {forgotPasswordSent && (
-          <div className="mt-4 rounded-lg bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-800 dark:text-green-300">
-            If an account exists for that email, you will receive a link to sign in or reset your password. Check your inbox.
-          </div>
-        )}
+      {/* Main content */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
+        <div className="w-full max-w-md">
+          <div className="rounded-2xl bg-white dark:bg-gray-800/95 shadow-xl shadow-slate-200/50 dark:shadow-black/20 border border-slate-200/60 dark:border-gray-700/60 overflow-hidden">
+            <div className="px-8 py-8 sm:px-10 sm:py-10">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Sign in</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Access is by invitation only.</p>
 
-        {error && (
-          <div className="mt-4 rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-800 dark:text-red-300">
-            {error}
-          </div>
-        )}
+              {forgotPasswordSent && (
+                <div className="mt-6 rounded-xl bg-emerald-50 dark:bg-emerald-900/25 border border-emerald-200/60 dark:border-emerald-800/40 p-4 text-sm text-emerald-800 dark:text-emerald-200">
+                  If an account exists for that email, you will receive a link to sign in or reset your password. Check your inbox.
+                </div>
+              )}
 
-        {!forgotPasswordSent && (
-          <>
-            <form onSubmit={handlePasswordSignIn} className="mt-6 space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? "Signing in…" : "Sign in"}
-              </button>
-            </form>
+              {error && (
+                <div className="mt-6 rounded-xl bg-red-50 dark:bg-red-900/25 border border-red-200/60 dark:border-red-800/40 p-4 text-sm text-red-800 dark:text-red-200">
+                  {error}
+                </div>
+              )}
 
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Forgot your password?</p>
-              <form onSubmit={handleForgotPassword} className="flex gap-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email"
-                  required
-                  className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
-                >
-                  Send reset link
-                </button>
-              </form>
+              {!forgotPasswordSent && (
+                <>
+                  <form onSubmit={handlePasswordSignIn} className="mt-6 space-y-5">
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+                      <input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="mt-1.5 block w-full rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 px-3.5 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+                      <input
+                        id="password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="mt-1.5 block w-full rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 px-3.5 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-colors"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-colors"
+                    >
+                      {loading ? "Signing in…" : "Sign in"}
+                    </button>
+                  </form>
+
+                  <div className="mt-8 pt-6 border-t border-slate-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Forgot your password?</p>
+                    <form onSubmit={handleForgotPassword} className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Your email"
+                        required
+                        className="flex-1 rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="shrink-0 rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700/50 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                      >
+                        Send reset link
+                      </button>
+                    </form>
+                  </div>
+                </>
+              )}
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -150,8 +184,15 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <p className="text-gray-600 dark:text-gray-400">Loading…</p>
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900">
+        <header className="shrink-0 border-b border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-sm">
+          <div className="mx-auto max-w-4xl px-6 py-6 sm:py-8 text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800 dark:text-white">RevIVe Hydration and Recovery</h1>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <p className="text-slate-600 dark:text-slate-400">Loading…</p>
+        </div>
       </div>
     }>
       <LoginContent />
