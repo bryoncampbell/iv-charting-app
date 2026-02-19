@@ -46,6 +46,7 @@ export default function PatientsPage() {
   useEffect(() => {
     let cancelled = false;
     if (isSupabaseConfigured() && supabase) {
+      const client = supabase;
       const token = auth?.session?.access_token;
       if (token) {
         fetch("/api/patients", { headers: { Authorization: `Bearer ${token}` } })
@@ -54,7 +55,7 @@ export default function PatientsPage() {
             if (!res.ok) {
               if (res.status === 503) {
                 // No service role – fall back to client (RLS applies)
-                return supabase.from("patients").select("*").order("created_at", { ascending: false }) as Promise<{ data: unknown[] | null; error: unknown }>;
+                return client.from("patients").select("*").order("created_at", { ascending: false }) as Promise<{ data: unknown[] | null; error: unknown }>;
               }
               return Promise.resolve({ data: null, error: new Error(res.statusText) });
             }
@@ -86,7 +87,7 @@ export default function PatientsPage() {
         return () => { cancelled = true; };
       }
       // No session yet – use client Supabase (RLS applies)
-      supabase
+      client
         .from("patients")
         .select("*")
         .order("created_at", { ascending: false })

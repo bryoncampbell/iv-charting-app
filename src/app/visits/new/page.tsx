@@ -39,13 +39,14 @@ export default function NewVisitPage() {
 
   useEffect(() => {
     if (isSupabaseConfigured() && supabase) {
+      const client = supabase;
       const token = auth?.session?.access_token;
       if (token) {
         fetch("/api/patients", { headers: { Authorization: `Bearer ${token}` } })
           .then((res) => {
             if (!res.ok) {
               if (res.status === 503) {
-                return supabase.from("patients").select("*").order("created_at", { ascending: false }) as Promise<{ data: unknown[] | null; error: unknown }>;
+                return client.from("patients").select("*").order("created_at", { ascending: false }) as Promise<{ data: unknown[] | null; error: unknown }>;
               }
               return Promise.resolve({ data: null, error: new Error(res.statusText) });
             }
@@ -70,7 +71,7 @@ export default function NewVisitPage() {
           .catch(() => setPatients([]));
         return;
       }
-      supabase
+      client
         .from("patients")
         .select("*")
         .order("created_at", { ascending: false })
