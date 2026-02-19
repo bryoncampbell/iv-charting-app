@@ -148,16 +148,16 @@ export default function EncounterPage() {
   const canSwitchRole = roleLower === "admin";
   const lockedRole = roleLower === "nursing" || roleLower === "provider" ? profileRoleToUiRole(roleLower === "provider" ? "provider" : "nursing") : null;
   const openedAsProvider = searchParams.get("tab") === "provider";
-  const isOnProviderTab = (tab: string) => tab === "provider";
-  const treatAsProviderForActions =
-    roleLower === "provider" ||
-    roleLower === "admin" ||
-    (auth?.profile != null && roleLower !== "nursing" && (openedAsProvider || isOnProviderTab(activeTab)));
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(() => (roleLower === "provider" ? "provider" : "intake"));
   const [isLoading, setIsLoading] = useState(true);
+
+  const treatAsProviderForActions =
+    roleLower === "provider" ||
+    roleLower === "admin" ||
+    (auth?.profile != null && roleLower !== "nursing" && (openedAsProvider || activeTab === "provider"));
 
   const [currentRoleState, setCurrentRoleState] = useState<Role>(() => (roleLower === "provider" ? "provider" : "nurse"));
   const currentRole = lockedRole ?? currentRoleState;
