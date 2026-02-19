@@ -40,6 +40,8 @@ export async function getAuditLog(): Promise<AuditEvent[]> {
       .select("timestamp, action, entity_type, entity_id, details")
       .order("timestamp", { ascending: false });
     if (error) {
+      // Log error for debugging but still return empty array (don't fall back to localStorage)
+      // eslint-disable-next-line no-console
       console.error("Error loading audit log from Supabase:", error);
       return [];
     }
@@ -81,11 +83,16 @@ export function logAudit(
       })
       .then(({ error }) => {
         if (error) {
-          // Ignore audit log write failures in production; they shouldn't block user flows.
+          // Log error for debugging - this indicates RLS policy issue or Supabase misconfiguration
+          // eslint-disable-next-line no-console
+          console.error("Error writing audit log to Supabase:", error);
+          // Don't fall back to localStorage - we want Supabase to be the source of truth
+          // If Supabase writes fail, fix the RLS policies or Supabase configuration
         }
       });
     return;
   }
+  // Only use localStorage when Supabase is not configured
   const log = getLog();
   log.push(entry);
   saveLog(log);

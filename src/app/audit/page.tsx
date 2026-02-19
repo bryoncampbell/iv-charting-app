@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { AuditEvent } from "@/types";
 import { getAuditLog } from "@/lib/audit";
+import { useAuth } from "@/contexts/AuthContext";
 
 function formatDateTime(isoString: string) {
   const date = new Date(isoString);
@@ -45,6 +46,7 @@ function actionLabel(action: AuditEvent["action"]): string {
 export default function AuditLogPage() {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const auth = useAuth();
 
   useEffect(() => {
     getAuditLog().then((log) => {
@@ -60,6 +62,27 @@ export default function AuditLogPage() {
       setLoading(false);
     });
   };
+
+  if (!auth?.isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center px-4">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Not authorized</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            The audit log is only available to admin users.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              ← Back to dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

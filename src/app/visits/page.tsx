@@ -210,9 +210,6 @@ export default function VisitsPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Visits
             </h1>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Check in patients (New Visit), complete nursing documentation, then providers review visits tagged &quot;Waiting for provider&quot; and approve or decline. Click any visit to open it.
-            </p>
           </div>
           <button
             onClick={handleNewVisit}

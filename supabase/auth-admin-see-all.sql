@@ -50,7 +50,17 @@ create policy "Authenticated delete all encounters"
   on encounters for delete to authenticated
   using (true);
 
--- Audit log: allow authenticated users to delete (for Reset Demo Data).
+-- Audit log: allow authenticated users to read, insert, and delete (for Reset Demo Data).
+drop policy if exists "Authenticated read all audit_log" on audit_log;
+create policy "Authenticated read all audit_log"
+  on audit_log for select to authenticated
+  using (true);
+
+drop policy if exists "Authenticated insert all audit_log" on audit_log;
+create policy "Authenticated insert all audit_log"
+  on audit_log for insert to authenticated
+  with check (true);
+
 drop policy if exists "Authenticated delete all audit_log" on audit_log;
 create policy "Authenticated delete all audit_log"
   on audit_log for delete to authenticated
