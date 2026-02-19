@@ -128,9 +128,6 @@ const NURSE_TAB_IDS = ["intake", "vitals", "iv-access", "order-request", "admini
 type NurseTabId = (typeof NURSE_TAB_IDS)[number];
 type Tab = NurseTabId | "provider" | "addendum";
 
-const ROLE_STORAGE_KEY_NURSE = "revive_current_nurse_name";
-const ROLE_STORAGE_KEY_PROVIDER = "revive_current_provider_name";
-
 type Role = "nurse" | "provider";
 
 function profileRoleToUiRole(role: string | null): Role {
@@ -160,8 +157,7 @@ export default function EncounterPage() {
     if (canSwitchRole) setCurrentRoleState(r);
   };
 
-  const [nurseName, setNurseName] = useState("");
-  const [providerName, setProviderName] = useState("");
+  const signingLabel = profileSigningLabel(auth?.profile ?? null);
 
   useEffect(() => {
     if (lockedRole != null) {
@@ -169,44 +165,6 @@ export default function EncounterPage() {
       setActiveTab(lockedRole === "provider" ? "provider" : "intake");
     }
   }, [lockedRole]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setNurseName(localStorage.getItem(ROLE_STORAGE_KEY_NURSE) ?? "");
-    setProviderName(localStorage.getItem(ROLE_STORAGE_KEY_PROVIDER) ?? "");
-  }, []);
-
-  // Pre-fill "sign as" from profile (name + license) when stored value is empty
-  const signingLabel = profileSigningLabel(auth?.profile ?? null);
-  useEffect(() => {
-    if (!signingLabel) return;
-    setNurseName((prev) => {
-      if (prev.trim()) return prev;
-      try {
-        localStorage.setItem(ROLE_STORAGE_KEY_NURSE, signingLabel);
-      } catch {}
-      return signingLabel;
-    });
-    setProviderName((prev) => {
-      if (prev.trim()) return prev;
-      try {
-        localStorage.setItem(ROLE_STORAGE_KEY_PROVIDER, signingLabel);
-      } catch {}
-      return signingLabel;
-    });
-  }, [signingLabel]);
-  const persistNurseName = (name: string) => {
-    setNurseName(name);
-    try {
-      localStorage.setItem(ROLE_STORAGE_KEY_NURSE, name);
-    } catch {}
-  };
-  const persistProviderName = (name: string) => {
-    setProviderName(name);
-    try {
-      localStorage.setItem(ROLE_STORAGE_KEY_PROVIDER, name);
-    } catch {}
-  };
 
   const [intake, setIntake] = useState({
     chiefComplaint: "",
@@ -581,7 +539,7 @@ export default function EncounterPage() {
       return;
     }
     setValidationErrors([]);
-    const signedBy = nurseName.trim() || "Nurse";
+    const signedBy = signingLabel?.trim() || "Nurse";
     setStatus("ready_for_provider");
     setNursingSignedBy(signedBy);
     saveEncounter({ status: "ready_for_provider", nursingSignedAt: nowIso(), nursingSignedBy: signedBy });
@@ -594,7 +552,7 @@ export default function EncounterPage() {
       return;
     }
     setValidationErrors([]);
-    const signedBy = providerName.trim() || "Provider";
+    const signedBy = signingLabel?.trim() || "Provider";
     setStatus("completed");
     setProviderSignedBy(signedBy);
     saveEncounter({ status: "completed", providerSignedAt: nowIso(), providerSignedBy: signedBy });
@@ -602,7 +560,7 @@ export default function EncounterPage() {
   };
 
   const handleDeclineToTreat = () => {
-    const declinedBy = providerName.trim() || "Provider";
+    const declinedBy = signingLabel?.trim() || "Provider";
     setStatus("declined");
     setDeclineReasonInput("");
     saveEncounter({
@@ -615,7 +573,7 @@ export default function EncounterPage() {
   };
 
   const handleAcknowledgeDecline = () => {
-    const acknowledgedBy = nurseName.trim() || "Nurse";
+    const acknowledgedBy = signingLabel?.trim() || "Nurse";
     saveEncounter({
       declineAcknowledgedAt: nowIso(),
       declineAcknowledgedBy: acknowledgedBy,
@@ -630,7 +588,7 @@ export default function EncounterPage() {
       setValidationErrors(["Please provide a reason for cancellation."]);
       return;
     }
-    const cancelledBy = currentRole === "nurse" ? (nurseName.trim() || "Nurse") : (providerName.trim() || "Provider");
+    const cancelledBy = currentRole === "nurse" ? (signingLabel?.trim() || "Nurse") : (signingLabel?.trim() || "Provider");
     setValidationErrors([]);
     try {
       setStatus("cancelled");
@@ -660,7 +618,7 @@ export default function EncounterPage() {
       return;
     }
     setValidationErrors([]);
-    const approvedBy = providerName.trim() || "Provider";
+    const approvedBy = signingLabel?.trim() || "Provider";
     const updated = { ...administration, orderApprovedAt: nowIso(), orderApprovedBy: approvedBy };
     setAdministration(updated);
     saveEncounter({ administration: normalizeAdministration(updated), revenue: orderPricing.total });
@@ -937,58 +895,8 @@ export default function EncounterPage() {
                 Provider
               </button>
             </div>
-            {currentRole === "nurse" ? (
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">Nursing documentation · sign as:</label>
-                <input
-                  type="text"
-                  value={nurseName}
-                  onChange={(e) => persistNurseName(e.target.value)}
-                  placeholder="e.g. Jane Nurse"
-                  className="w-48 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">Provider documentation · sign as:</label>
-                <input
-                  type="text"
-                  value={providerName}
-                  onChange={(e) => persistProviderName(e.target.value)}
-                  placeholder="e.g. Dr. Smith"
-                  className="w-48 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-            )}
           </div>
         </div>
-        )}
-        {!canSwitchRole && (
-          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-            {currentRole === "nurse" ? (
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">Nursing documentation · sign as:</label>
-                <input
-                  type="text"
-                  value={nurseName}
-                  onChange={(e) => persistNurseName(e.target.value)}
-                  placeholder="e.g. Jane Nurse"
-                  className="w-48 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">Provider documentation · sign as:</label>
-                <input
-                  type="text"
-                  value={providerName}
-                  onChange={(e) => persistProviderName(e.target.value)}
-                  placeholder="e.g. Dr. Smith"
-                  className="w-48 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-            )}
-          </div>
         )}
 
         <div className="mt-6 border-b border-gray-200 dark:border-gray-700">
@@ -1583,7 +1491,7 @@ export default function EncounterPage() {
                             const updated = {
                               ...administration,
                               readyForDischargeAt: nowIso(),
-                              readyForDischargeBy: nurseName.trim() || "Nurse",
+                              readyForDischargeBy: signingLabel?.trim() || "Nurse",
                             };
                             setAdministration(updated);
                           }}
