@@ -148,7 +148,11 @@ export default function EncounterPage() {
   const canSwitchRole = roleLower === "admin";
   const lockedRole = roleLower === "nursing" || roleLower === "provider" ? profileRoleToUiRole(roleLower === "provider" ? "provider" : "nursing") : null;
   const openedAsProvider = searchParams.get("tab") === "provider";
-  const treatAsProviderForActions = roleLower === "provider" || roleLower === "admin" || (openedAsProvider && auth?.profile != null && roleLower !== "nursing");
+  const isOnProviderTab = (tab: string) => tab === "provider";
+  const treatAsProviderForActions =
+    roleLower === "provider" ||
+    roleLower === "admin" ||
+    (auth?.profile != null && roleLower !== "nursing" && (openedAsProvider || isOnProviderTab(activeTab)));
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -1413,9 +1417,16 @@ export default function EncounterPage() {
                     </h2>
                     {orderApproved ? (
                       <p className="text-sm text-green-600 dark:text-green-400">Approved by {administration.orderApprovedBy} {administration.orderApprovedAt ? new Date(administration.orderApprovedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }) : ""}</p>
-                    ) : status === "ready_for_provider" ? (
+                    ) : (
                       <div className="flex flex-wrap items-end gap-4">
-                        <button type="button" onClick={handleApproveOrder} className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Approve order</button>
+                        <button
+                          type="button"
+                          onClick={handleApproveOrder}
+                          disabled={status !== "ready_for_provider"}
+                          className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Approve order
+                        </button>
                         <span className="text-sm text-gray-500 dark:text-gray-400">or</span>
                         <div className="flex flex-col gap-2">
                           <textarea
@@ -1423,13 +1434,22 @@ export default function EncounterPage() {
                             onChange={(e) => setDeclineReasonInput(e.target.value)}
                             rows={2}
                             placeholder="Reason for declining (optional)"
-                            className="w-full min-w-[200px] rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            disabled={status !== "ready_for_provider"}
+                            className="w-full min-w-[200px] rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white disabled:opacity-50"
                           />
-                          <button type="button" onClick={handleDeclineToTreat} className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Decline to treat</button>
+                          <button
+                            type="button"
+                            onClick={handleDeclineToTreat}
+                            disabled={status !== "ready_for_provider"}
+                            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Decline to treat
+                          </button>
                         </div>
+                        {status !== "ready_for_provider" && (
+                          <p className="text-sm text-amber-600 dark:text-amber-400 w-full">Nursing must mark the visit complete before you can approve or decline.</p>
+                        )}
                       </div>
-                    ) : (
-                      <p className="text-sm text-amber-600 dark:text-amber-400">Nursing must mark the visit complete before you can approve or decline the order.</p>
                     )}
                   </div>
                 )}
@@ -1726,21 +1746,30 @@ export default function EncounterPage() {
                       <p className="mt-0.5 text-gray-900 dark:text-white">{administration.additivesMedications || "None"}</p>
                     </div>
                     {administration.notes ? <div><strong className="text-gray-600 dark:text-gray-400">Order notes:</strong> <span className="text-gray-900 dark:text-white">{administration.notes}</span></div> : null}
-                    {/* Approve order — visible when user is provider (by profile or opened as provider) */}
+                    {/* Approve order — show buttons when provider; enable only when visit ready_for_provider */}
                     {orderApproved ? (
                       <p className="text-xs text-green-600 dark:text-green-400 pt-1">Approved by {administration.orderApprovedBy} {administration.orderApprovedAt ? new Date(administration.orderApprovedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }) : ""}</p>
-                    ) : status === "ready_for_provider" && canShowApproveDecline ? (
+                    ) : canShowApproveDecline ? (
                       <div className="pt-2 flex flex-wrap items-end gap-4">
-                        <button type="button" onClick={handleApproveOrder} className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Approve order</button>
+                        <button
+                          type="button"
+                          onClick={handleApproveOrder}
+                          disabled={status !== "ready_for_provider"}
+                          title={status !== "ready_for_provider" ? "Nursing must mark the visit complete first." : undefined}
+                          className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Approve order
+                        </button>
+                        {status !== "ready_for_provider" && (
+                          <span className="text-xs text-amber-600 dark:text-amber-400">Nursing must mark the visit complete first.</span>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 pt-1">
-                        {!canShowApproveDecline ? "Only providers can approve the order." : "Nursing must mark the visit complete before you can approve the order."}
-                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 pt-1">Only providers can approve the order.</p>
                     )}
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Decline to treat</p>
-                      {status === "ready_for_provider" && canShowApproveDecline ? (
+                      {canShowApproveDecline ? (
                         <>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">If you decline to treat this patient based on the information provided, document the reason below (optional) and confirm.</p>
                           <textarea
@@ -1748,14 +1777,24 @@ export default function EncounterPage() {
                             onChange={(e) => setDeclineReasonInput(e.target.value)}
                             rows={2}
                             placeholder="Reason for declining (optional)..."
-                            className="mb-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            disabled={status !== "ready_for_provider"}
+                            className="mb-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                           />
-                          <button type="button" onClick={handleDeclineToTreat} className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Decline to treat</button>
+                          <button
+                            type="button"
+                            onClick={handleDeclineToTreat}
+                            disabled={status !== "ready_for_provider"}
+                            title={status !== "ready_for_provider" ? "Nursing must mark the visit complete first." : undefined}
+                            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Decline to treat
+                          </button>
+                          {status !== "ready_for_provider" && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Available after nursing marks the visit complete.</p>
+                          )}
                         </>
                       ) : (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {!canShowApproveDecline ? "Only providers can decline to treat." : "Available after nursing marks the visit complete."}
-                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Only providers can decline to treat.</p>
                       )}
                     </div>
                   </div>
