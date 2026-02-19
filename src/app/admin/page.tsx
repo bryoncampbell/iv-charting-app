@@ -13,7 +13,6 @@ type AdminUser = {
   last_sign_in_at?: string;
   banned_until?: string;
   role: string;
-  display_name: string | null;
   is_active: boolean;
   profile_updated_at: string | null;
   first_name?: string | null;
@@ -47,7 +46,6 @@ export default function AdminPage() {
   const [clearingMustResetId, setClearingMustResetId] = useState<string | null>(null);
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
   const [createEmail, setCreateEmail] = useState("");
-  const [createDisplayName, setCreateDisplayName] = useState("");
   const [createFirstName, setCreateFirstName] = useState("");
   const [createLastName, setCreateLastName] = useState("");
   const [createDob, setCreateDob] = useState("");
@@ -194,7 +192,6 @@ export default function AdminPage() {
         headers: getAuthHeaders(auth.session),
         body: JSON.stringify({
           email: createEmail.trim(),
-          display_name: createDisplayName.trim() || undefined,
           role: createRole,
           first_name: createFirstName.trim() || undefined,
           last_name: createLastName.trim() || undefined,
@@ -221,7 +218,6 @@ export default function AdminPage() {
         id: data.user.id,
         email: data.user.email,
         role: data.user.role,
-        display_name: data.user.display_name,
         is_active: true,
         created_at: "",
         last_sign_in_at: undefined,
@@ -241,7 +237,6 @@ export default function AdminPage() {
         license_expiry: createLicenseExpiry.trim() || null,
       };
       setCreateEmail("");
-      setCreateDisplayName("");
       setCreateFirstName("");
       setCreateLastName("");
       setCreateDob("");
@@ -277,7 +272,6 @@ export default function AdminPage() {
       license_number: u.license_number ?? "",
       license_state: u.license_state ?? "",
       license_expiry: u.license_expiry ?? "",
-      display_name: u.display_name ?? "",
     });
   };
 
@@ -288,7 +282,6 @@ export default function AdminPage() {
         method: "PATCH",
         headers: getAuthHeaders(auth.session),
         body: JSON.stringify({
-          display_name: editProfileForm.display_name?.trim() || null,
           first_name: editProfileForm.first_name?.trim() || null,
           last_name: editProfileForm.last_name?.trim() || null,
           date_of_birth: editProfileForm.date_of_birth?.trim() || null,
@@ -417,10 +410,6 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                     <input id="create-email" type="email" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} required className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-52" />
                   </div>
                   <div>
-                    <label htmlFor="create-display-name" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Display name</label>
-                    <input id="create-display-name" type="text" value={createDisplayName} onChange={(e) => setCreateDisplayName(e.target.value)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white w-40" />
-                  </div>
-                  <div>
                     <label htmlFor="create-role" className="block text-xs font-medium text-gray-500 dark:text-gray-400">Role</label>
                     <select id="create-role" value={createRole} onChange={(e) => setCreateRole(e.target.value as AppRole)} className="mt-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white">
                       <option value="nursing">Nursing</option>
@@ -515,7 +504,7 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                 {users.map((u) => (
                   <tr key={u.id} className={!u.is_active ? "bg-gray-100 dark:bg-gray-800/50" : ""}>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                      {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.display_name || "—"}
+                      {[u.first_name, u.last_name].filter(Boolean).join(" ") || "—"}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                       {u.email ?? "(no email)"}
@@ -625,10 +614,6 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Display name</label>
-                  <input type="text" value={editProfileForm.display_name ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, display_name: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
-                </div>
-                <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Date of birth</label>
                   <input type="date" value={editProfileForm.date_of_birth ?? ""} onChange={(e) => setEditProfileForm((f) => ({ ...f, date_of_birth: e.target.value }))} className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
                 </div>
@@ -675,7 +660,7 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                         type="date"
                         value={editProfileForm.license_expiry ?? ""}
                         onChange={(e) => setEditProfileForm((f) => ({ ...f, license_expiry: e.target.value }))}
-                        className={`mt-1 w-full rounded border px-3 py-2 text-sm text-gray-900 dark:text-white ${getLicenseExpiryInputClass(editProfileForm.license_expiry ?? null) || "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"}`}
+                        className={`mt-1 w-full rounded border px-3 py-2 text-sm text-gray-900 dark:text-white ${users.find((u) => u.id === editingProfileId)?.role === "admin" ? "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" : getLicenseExpiryInputClass(editProfileForm.license_expiry ?? null) || "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"}`}
                       />
                     </div>
                   </div>

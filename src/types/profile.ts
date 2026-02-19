@@ -5,7 +5,6 @@ export interface Profile {
   id: string;
   user_id: string;
   email: string | null;
-  display_name: string | null;
   role: AppRole;
   is_active: boolean;
   created_at: string;
@@ -48,9 +47,11 @@ export function isLicenseExpiringSoon(licenseExpiry: string | null | undefined):
   return daysUntil <= 30;
 }
 
-/** True when the user should see the license warning (banner/toast). Applies to all roles (nursing, provider, admin). */
-export function shouldShowLicenseWarning(profile: Pick<Profile, "license_type" | "license_expiry"> | null): boolean {
+/** True when the user should see the license warning (banner/toast). Excludes admin role (admins don't need licenses). */
+export function shouldShowLicenseWarning(profile: Pick<Profile, "license_type" | "license_expiry" | "role"> | null): boolean {
   if (!profile) return false;
+  // Admin users don't need licenses/certifications
+  if (profile.role === "admin") return false;
   const expiry = profile.license_expiry ?? (profile as { licenseExpiry?: string }).licenseExpiry;
   const licenseType = (profile.license_type ?? (profile as { licenseType?: string }).licenseType)?.trim();
   if (licenseType && !expiry?.trim()) return true;

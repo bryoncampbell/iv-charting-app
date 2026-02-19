@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
 function signedInLabel(
-  profile: { first_name?: string | null; last_name?: string | null; display_name?: string | null } | null,
+  profile: { first_name?: string | null; last_name?: string | null; role?: string | null } | null,
   email?: string | null
 ): string {
   if (!profile) {
@@ -15,9 +15,10 @@ function signedInLabel(
   const firstName = (profile.first_name ?? "").trim();
   const lastName = (profile.last_name ?? "").trim();
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
-  if (fullName) return fullName;
-  const displayName = (profile.display_name ?? "").trim();
-  if (displayName) return displayName;
+  const role = profile.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : null;
+  if (fullName) {
+    return role ? `${fullName} (${role})` : fullName;
+  }
   return email?.trim() || "Account";
 }
 
@@ -80,7 +81,7 @@ export default function Navigation() {
                       <button
                         type="button"
                         onClick={() => auth.signOut()}
-                        className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                       >
                         Sign out
                       </button>
@@ -129,13 +130,13 @@ export default function Navigation() {
             <div className="flex items-center gap-2">
               {auth?.user ? (
                 <>
-                  <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[140px]" title={signedInText}>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[120px]" title={signedInText}>
                     {signedInText}
                   </span>
                   <button
                     type="button"
                     onClick={() => auth.signOut()}
-                    className="text-xs font-medium text-gray-600 dark:text-gray-400"
+                    className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
                   >
                     Sign out
                   </button>

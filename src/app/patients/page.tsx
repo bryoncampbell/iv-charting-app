@@ -78,6 +78,7 @@ export default function PatientsPage() {
               phone: p.phone ? formatPhoneNumber(normalizePhoneNumber(p.phone)) : undefined,
               allergies: p.allergies ?? [],
             }));
+            console.log(`Loaded ${formatted.length} patients from API`);
             setPatients(formatted);
           })
           .catch((err) => {
@@ -105,6 +106,7 @@ export default function PatientsPage() {
             phone: p.phone ? formatPhoneNumber(normalizePhoneNumber(p.phone)) : undefined,
             allergies: p.allergies ?? [],
           }));
+          console.log(`Loaded ${formatted.length} patients from Supabase client`);
           if (!cancelled) setPatients(formatted);
         });
       return () => { cancelled = true; };

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { assertAdmin } from "@/lib/adminAuth";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabaseServer";
 
-/** PATCH: update profile (role, display_name, is_active). Admin only. */
+/** PATCH: update profile (role, is_active, and profile fields). Admin only. */
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -19,7 +19,6 @@ export async function PATCH(
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     const roleValue = typeof body.role === "string" ? body.role.trim().toLowerCase() : "";
     if (["nursing", "provider", "admin"].includes(roleValue)) updates.role = roleValue;
-    if (typeof body.display_name === "string") updates.display_name = body.display_name;
     if (typeof body.is_active === "boolean") updates.is_active = body.is_active;
     if (typeof body.first_name === "string") updates.first_name = body.first_name.trim() || null;
     if (typeof body.last_name === "string") updates.last_name = body.last_name.trim() || null;

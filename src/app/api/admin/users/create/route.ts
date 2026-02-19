@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const email = typeof body.email === "string" ? body.email.trim() : "";
     if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
-    const displayName = typeof body.display_name === "string" ? body.display_name.trim() : undefined;
     const roleInput = typeof body.role === "string" ? body.role.trim().toLowerCase() : "";
     const role = ["nursing", "provider", "admin"].includes(roleInput) ? (roleInput as AppRole) : "nursing";
     const first_name = typeof body.first_name === "string" ? body.first_name.trim() || null : null;
@@ -70,7 +69,7 @@ export async function POST(request: NextRequest) {
       email,
       password: tempPassword,
       email_confirm: true,
-      user_metadata: { display_name: displayName ?? null, role },
+      user_metadata: { role },
       app_metadata: { must_reset_password: true },
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -78,7 +77,6 @@ export async function POST(request: NextRequest) {
 
     await supabaseAdmin.from("profiles").update({
       email,
-      display_name: displayName ?? ([first_name, last_name].filter(Boolean).join(" ") || null),
       first_name,
       last_name,
       date_of_birth: date_of_birth || null,
@@ -101,7 +99,6 @@ export async function POST(request: NextRequest) {
         id: newUser.user.id,
         email: newUser.user.email,
         role,
-        display_name: displayName ?? ([first_name, last_name].filter(Boolean).join(" ") || null),
       },
       temporary_password: tempPassword,
       email_sent: emailSent,

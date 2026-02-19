@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,12 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
 
   const redirect = searchParams.get("redirect") ?? "/dashboard";
+
+  useEffect(() => {
+    if (auth?.user) {
+      router.replace(redirect);
+    }
+  }, [auth?.user, redirect, router]);
 
   if (!isSupabaseConfigured()) {
     return (
@@ -38,7 +44,6 @@ function LoginContent() {
   }
 
   if (auth?.user) {
-    router.replace(redirect);
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900">
         <header className="shrink-0 border-b border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-sm">

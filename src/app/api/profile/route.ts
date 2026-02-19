@@ -3,7 +3,7 @@ import { getCurrentUserId } from "@/lib/adminAuth";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabaseServer";
 
 const PROFILE_COLUMNS =
-  "user_id, email, display_name, first_name, last_name, date_of_birth, phone, street_address, city, state, zip_code, license_type, license_number, license_state, license_expiry, role, is_active, updated_at";
+  "user_id, email, first_name, last_name, date_of_birth, phone, street_address, city, state, zip_code, license_type, license_number, license_state, license_expiry, role, is_active, updated_at";
 
 /** GET: current user's profile (for /profile page). */
 export async function GET(request: NextRequest) {
@@ -32,7 +32,6 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (typeof body.display_name === "string") updates.display_name = body.display_name.trim() || null;
     if (typeof body.first_name === "string") updates.first_name = body.first_name.trim() || null;
     if (typeof body.last_name === "string") updates.last_name = body.last_name.trim() || null;
     if (typeof body.date_of_birth === "string") updates.date_of_birth = body.date_of_birth.trim() || null;

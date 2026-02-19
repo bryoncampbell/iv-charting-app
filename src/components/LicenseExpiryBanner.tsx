@@ -13,7 +13,7 @@ interface LicenseExpiryBannerProps {
  * Renders inline in the page (e.g. at top of dashboard) so it always shows when the page loads.
  */
 export default function LicenseExpiryBanner({ accessToken }: LicenseExpiryBannerProps) {
-  const [profile, setProfile] = useState<{ license_type?: string; license_expiry?: string } | null>(null);
+  const [profile, setProfile] = useState<{ license_type?: string; license_expiry?: string; role?: string } | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function LicenseExpiryBanner({ accessToken }: LicenseExpiryBanner
   }, [accessToken]);
 
   const profileForWarning = profile
-    ? { license_type: profile.license_type ?? null, license_expiry: profile.license_expiry ?? null }
+    ? { license_type: profile.license_type ?? null, license_expiry: profile.license_expiry ?? null, role: profile.role ?? null }
     : null;
   if (!loaded || !profile || !shouldShowLicenseWarning(profileForWarning)) return null;
 

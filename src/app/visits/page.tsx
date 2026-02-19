@@ -27,10 +27,12 @@ export default function VisitsPage() {
           .order("created_at", { ascending: false });
         if (error) {
           console.error("Supabase encounters load error:", error);
+          console.error("Error details:", JSON.stringify(error, null, 2));
           setAllVisits([]);
           return;
         }
         const encounters: Encounter[] = (data ?? []).map((row) => encounterRowToEncounter(row));
+        console.log(`Loaded ${encounters.length} visits from Supabase`);
         setAllVisits(encounters);
         return;
       }

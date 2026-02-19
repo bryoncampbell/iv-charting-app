@@ -10,7 +10,6 @@ import {
 } from "@/types/profile";
 
 type ProfileForm = {
-  display_name: string;
   first_name: string;
   last_name: string;
   date_of_birth: string;
@@ -26,7 +25,6 @@ type ProfileForm = {
 };
 
 const emptyForm: ProfileForm = {
-  display_name: "",
   first_name: "",
   last_name: "",
   date_of_birth: "",
@@ -67,7 +65,6 @@ export default function ProfilePage() {
         const { profile } = await res.json();
         if (!cancelled && profile) {
           setForm({
-            display_name: profile.display_name ?? "",
             first_name: profile.first_name ?? "",
             last_name: profile.last_name ?? "",
             date_of_birth: profile.date_of_birth ?? "",
@@ -106,7 +103,6 @@ export default function ProfilePage() {
           Authorization: `Bearer ${auth.session.access_token}`,
         },
         body: JSON.stringify({
-          display_name: form.display_name.trim() || null,
           first_name: form.first_name.trim() || null,
           last_name: form.last_name.trim() || null,
           date_of_birth: form.date_of_birth.trim() || null,
@@ -136,6 +132,7 @@ export default function ProfilePage() {
   const licenseExpiring = shouldShowLicenseWarning({
     license_type: (form.license_type || auth?.profile?.license_type) ?? null,
     license_expiry: (form.license_expiry || auth?.profile?.license_expiry) ?? null,
+    role: auth?.profile?.role ?? null,
   });
   const expiryStatus = getLicenseExpiryStatus((form.license_expiry || auth?.profile?.license_expiry) ?? null);
   const expiryInputClass = getLicenseExpiryInputClass(form.license_expiry);
@@ -234,15 +231,6 @@ export default function ProfilePage() {
                 className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
               />
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Display name</label>
-            <input
-              type="text"
-              value={form.display_name}
-              onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
-              className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-            />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Date of birth</label>
