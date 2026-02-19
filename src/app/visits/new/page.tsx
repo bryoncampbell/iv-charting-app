@@ -43,12 +43,12 @@ export default function NewVisitPage() {
       const token = auth?.session?.access_token;
       if (token) {
         fetch("/api/patients", { headers: { Authorization: `Bearer ${token}` } })
-          .then((res) => {
+          .then((res): Promise<{ data: unknown[] | null; error: unknown }> => {
             if (!res.ok) {
               if (res.status === 503) {
-                return client.from("patients").select("*").order("created_at", { ascending: false }).then((r) => ({ data: r.data ?? null, error: r.error ?? null }));
+                return client.from("patients").select("*").order("created_at", { ascending: false }).then((r) => ({ data: r.data ?? null, error: (r.error ?? null) as unknown }));
               }
-              return Promise.resolve({ data: null, error: new Error(res.statusText) });
+              return Promise.resolve({ data: null, error: new Error(res.statusText) as unknown });
             }
             return res.json().then((body: { data?: unknown[] }) => ({ data: body.data ?? [], error: null }));
           })
