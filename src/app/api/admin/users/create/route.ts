@@ -50,9 +50,8 @@ export async function POST(request: NextRequest) {
     const email = typeof body.email === "string" ? body.email.trim() : "";
     if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
     const displayName = typeof body.display_name === "string" ? body.display_name.trim() : undefined;
-    const role = typeof body.role === "string" && ["nursing", "provider", "admin"].includes(body.role)
-      ? (body.role as AppRole)
-      : "nursing";
+    const roleInput = typeof body.role === "string" ? body.role.trim().toLowerCase() : "";
+    const role = ["nursing", "provider", "admin"].includes(roleInput) ? (roleInput as AppRole) : "nursing";
     const first_name = typeof body.first_name === "string" ? body.first_name.trim() || null : null;
     const last_name = typeof body.last_name === "string" ? body.last_name.trim() || null : null;
     const date_of_birth = typeof body.date_of_birth === "string" ? body.date_of_birth.trim() || null : null;

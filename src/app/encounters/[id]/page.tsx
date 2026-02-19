@@ -143,10 +143,12 @@ export default function EncounterPage() {
   const auth = useAuth();
   const encounterId = params.id as string;
 
-  const profileRole = auth?.role ?? null;
-  const roleLower = (profileRole ?? "").toLowerCase();
+  const profileRole = auth?.role ?? (auth?.profile as { role?: string } | null)?.role ?? null;
+  const roleLower = (typeof profileRole === "string" ? profileRole : "").trim().toLowerCase();
   const canSwitchRole = roleLower === "admin";
   const lockedRole = roleLower === "nursing" || roleLower === "provider" ? profileRoleToUiRole(roleLower === "provider" ? "provider" : "nursing") : null;
+  const openedAsProvider = searchParams.get("tab") === "provider";
+  const treatAsProviderForActions = roleLower === "provider" || roleLower === "admin" || (openedAsProvider && auth?.profile != null && roleLower !== "nursing");
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -661,6 +663,7 @@ export default function EncounterPage() {
   /** Who can edit by role: nurses edit nursing only; providers and admins edit nursing + provider. */
   const canEditNursingByRole = roleLower === "nursing" || roleLower === "provider" || roleLower === "admin";
   const canEditProviderByRole = roleLower === "provider" || roleLower === "admin";
+  const canShowApproveDecline = treatAsProviderForActions;
   const nursingSectionReadOnly = !canEditNursingByRole || isNurseLocked;
   const administrationSectionReadOnly = !canEditNursingByRole || isAdministrationLocked;
   const providerSectionReadOnly = !canEditProviderByRole || isProviderLocked;
@@ -1403,7 +1406,7 @@ export default function EncounterPage() {
                 )}
 
                 {/* Provider: approve or decline (same actions as on Provider tab) */}
-                {canEditProviderByRole && (
+                {canShowApproveDecline && (
                   <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-600 dark:bg-gray-800">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2 mb-4">
                       Provider — approve or decline order
@@ -1723,21 +1726,21 @@ export default function EncounterPage() {
                       <p className="mt-0.5 text-gray-900 dark:text-white">{administration.additivesMedications || "None"}</p>
                     </div>
                     {administration.notes ? <div><strong className="text-gray-600 dark:text-gray-400">Order notes:</strong> <span className="text-gray-900 dark:text-white">{administration.notes}</span></div> : null}
-                    {/* Approve order — always visible in Provider tab; only providers/admins can use buttons */}
+                    {/* Approve order — visible when user is provider (by profile or opened as provider) */}
                     {orderApproved ? (
                       <p className="text-xs text-green-600 dark:text-green-400 pt-1">Approved by {administration.orderApprovedBy} {administration.orderApprovedAt ? new Date(administration.orderApprovedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }) : ""}</p>
-                    ) : status === "ready_for_provider" && canEditProviderByRole ? (
+                    ) : status === "ready_for_provider" && canShowApproveDecline ? (
                       <div className="pt-2 flex flex-wrap items-end gap-4">
                         <button type="button" onClick={handleApproveOrder} className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Approve order</button>
                       </div>
                     ) : (
                       <p className="text-xs text-amber-600 dark:text-amber-400 pt-1">
-                        {!canEditProviderByRole ? "Only providers can approve the order." : "Nursing must mark the visit complete before you can approve the order."}
+                        {!canShowApproveDecline ? "Only providers can approve the order." : "Nursing must mark the visit complete before you can approve the order."}
                       </p>
                     )}
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Decline to treat</p>
-                      {status === "ready_for_provider" && canEditProviderByRole ? (
+                      {status === "ready_for_provider" && canShowApproveDecline ? (
                         <>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">If you decline to treat this patient based on the information provided, document the reason below (optional) and confirm.</p>
                           <textarea
@@ -1751,7 +1754,7 @@ export default function EncounterPage() {
                         </>
                       ) : (
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {!canEditProviderByRole ? "Only providers can decline to treat." : "Available after nursing marks the visit complete."}
+                          {!canShowApproveDecline ? "Only providers can decline to treat." : "Available after nursing marks the visit complete."}
                         </p>
                       )}
                     </div>

@@ -17,7 +17,8 @@ export async function PATCH(
   try {
     const body = await request.json();
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (typeof body.role === "string" && ["nursing", "provider", "admin"].includes(body.role)) updates.role = body.role;
+    const roleValue = typeof body.role === "string" ? body.role.trim().toLowerCase() : "";
+    if (["nursing", "provider", "admin"].includes(roleValue)) updates.role = roleValue;
     if (typeof body.display_name === "string") updates.display_name = body.display_name;
     if (typeof body.is_active === "boolean") updates.is_active = body.is_active;
     if (typeof body.first_name === "string") updates.first_name = body.first_name.trim() || null;
