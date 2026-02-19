@@ -159,12 +159,21 @@ export default function EncounterPage() {
 
   const signingLabel = profileSigningLabel(auth?.profile ?? null);
 
+  // When user is provider, always open on provider tab (profile loads async so sync when role becomes available)
   useEffect(() => {
     if (lockedRole != null) {
       setCurrentRoleState(lockedRole);
       setActiveTab(lockedRole === "provider" ? "provider" : "intake");
     }
   }, [lockedRole]);
+
+  // If role is provider but we're still on a nurse-only tab, switch to provider tab (handles late profile load)
+  const nurseOnlyTabIds = ["intake", "vitals", "iv-access", "order-request", "administration"];
+  useEffect(() => {
+    if (profileRole === "provider" && nurseOnlyTabIds.includes(activeTab)) {
+      setActiveTab("provider");
+    }
+  }, [profileRole, activeTab]);
 
   const [intake, setIntake] = useState({
     chiefComplaint: "",
