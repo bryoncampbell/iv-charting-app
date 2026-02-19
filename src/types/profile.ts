@@ -48,7 +48,7 @@ export function isLicenseExpiringSoon(licenseExpiry: string | null | undefined):
 }
 
 /** True when the user should see the license warning (banner/toast). Excludes admin role (admins don't need licenses). */
-export function shouldShowLicenseWarning(profile: Pick<Profile, "license_type" | "license_expiry" | "role"> | null): boolean {
+export function shouldShowLicenseWarning(profile: Pick<Profile, "license_type" | "license_expiry"> & { role?: AppRole | null } | null): boolean {
   if (!profile) return false;
   // Admin users don't need licenses/certifications
   if (profile.role === "admin") return false;
