@@ -10,7 +10,7 @@ import { newId, nowIso } from "@/lib/ids";
 import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { patientRowToPatient, patientToRow, encounterToRow } from "@/lib/supabaseMappers";
+import { patientRowToPatient, patientToRow, encounterToRow, type PatientRow } from "@/lib/supabaseMappers";
 import { useAuth } from "@/contexts/AuthContext";
 
 const formatPhoneNumber = (value: string): string => {
@@ -62,7 +62,7 @@ export default function NewVisitPage() {
               setPatients([]);
               return;
             }
-            const list = (data as unknown[]).map((row) => patientRowToPatient(row));
+            const list = (data as unknown[]).map((row) => patientRowToPatient(row as PatientRow));
             const formatted = list.map((p) => ({
               ...p,
               phone: p.phone ? formatPhoneNumber(normalizePhoneNumber(p.phone)) : undefined,
