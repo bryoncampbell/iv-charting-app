@@ -65,10 +65,24 @@ export default function SetPasswordPage() {
     router.replace("/dashboard");
   };
 
+  const handleSignOut = async () => {
+    await auth?.signOut();
+    router.replace("/login");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-      <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-md w-full">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Set your password</h1>
+      <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow max-w-md w-full relative">
+        <div className="absolute top-4 right-4">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+          >
+            Sign out
+          </button>
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white pr-20">Set your password</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           {mustReset
             ? "You must set a new password before continuing. This replaces your temporary password."
