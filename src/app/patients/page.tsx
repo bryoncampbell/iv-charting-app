@@ -32,6 +32,7 @@ const normalizePhoneNumber = (phone: string): string => {
 export default function PatientsPage() {
   const router = useRouter();
   const auth = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,6 +42,8 @@ export default function PatientsPage() {
     dob: "",
     phone: "",
   });
+
+  useEffect(() => setMounted(true), []);
 
   // Load patients: use API (service role) when Supabase + session so all users see all patients; else client Supabase or localStorage
   useEffect(() => {
@@ -268,7 +271,7 @@ export default function PatientsPage() {
             </h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Manage patient information and records
-              {typeof window !== "undefined" && (
+              {mounted && (
                 <span className="ml-2 text-xs">
                   (Storage: {isSupabaseConfigured() && supabase ? "Supabase" : "Local"})
                 </span>

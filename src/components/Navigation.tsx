@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
@@ -25,6 +26,9 @@ function signedInLabel(
 export default function Navigation() {
   const pathname = usePathname();
   const auth = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const signedInText = auth?.user ? signedInLabel(auth.profile, auth.user.email ?? null) : "";
 
   const navItems = [
@@ -32,9 +36,9 @@ export default function Navigation() {
     { href: "/patients", label: "Patients", icon: "👥" },
     { href: "/visits", label: "Visits", icon: "📋" },
     { href: "/reports", label: "Reports", icon: "📈" },
-    ...(auth?.isAdmin ? [{ href: "/audit", label: "Audit Log", icon: "📜" } as const] : []),
-    ...(auth?.user ? [{ href: "/profile", label: "Profile", icon: "👤" } as const] : []),
-    ...(auth?.isAdmin ? [{ href: "/admin", label: "Admin", icon: "⚙️" } as const] : []),
+    ...(mounted && auth?.isAdmin ? [{ href: "/audit", label: "Audit Log", icon: "📜" } as const] : []),
+    ...(mounted && auth?.user ? [{ href: "/profile", label: "Profile", icon: "👤" } as const] : []),
+    ...(mounted && auth?.isAdmin ? [{ href: "/admin", label: "Admin", icon: "⚙️" } as const] : []),
   ];
 
   const isActive = (href: string) => {
@@ -73,7 +77,7 @@ export default function Navigation() {
               ))}
               {isSupabaseConfigured() && (
                 <div className="ml-2 flex items-center gap-2 border-l border-gray-200 dark:border-gray-600 pl-2">
-                  {auth?.user ? (
+                  {mounted && auth?.user ? (
                     <>
                       <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[200px]" title={signedInText}>
                         {signedInText}
@@ -86,10 +90,12 @@ export default function Navigation() {
                         Sign out
                       </button>
                     </>
-                  ) : (
+                  ) : mounted ? (
                     <Link href="/login" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
                       Sign in
                     </Link>
+                  ) : (
+                    <span className="text-sm text-gray-400 dark:text-gray-500 w-16" aria-hidden="true" />
                   )}
                 </div>
               )}
@@ -128,7 +134,7 @@ export default function Navigation() {
           </Link>
           {isSupabaseConfigured() && (
             <div className="flex items-center gap-2">
-              {auth?.user ? (
+              {mounted && auth?.user ? (
                 <>
                   <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[120px]" title={signedInText}>
                     {signedInText}
@@ -141,10 +147,12 @@ export default function Navigation() {
                     Sign out
                   </button>
                 </>
-              ) : (
+              ) : mounted ? (
                 <Link href="/login" className="text-sm font-medium text-blue-600 dark:text-blue-400">
                   Sign in
                 </Link>
+              ) : (
+                <span className="text-xs text-gray-400 dark:text-gray-500 w-12" aria-hidden="true" />
               )}
             </div>
           )}
