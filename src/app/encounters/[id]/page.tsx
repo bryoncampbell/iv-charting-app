@@ -187,14 +187,6 @@ export default function EncounterPage() {
     }
   }, [lockedRole]);
 
-  // If role is provider but we're still on a nurse-only tab, switch to provider tab (handles late profile load)
-  const nurseOnlyTabIds = ["intake", "vitals", "iv-access", "order-request", "administration"];
-  useEffect(() => {
-    if (profileRole === "provider" && nurseOnlyTabIds.includes(activeTab)) {
-      setActiveTab("provider");
-    }
-  }, [profileRole, activeTab]);
-
   const [intake, setIntake] = useState({
     chiefComplaint: "",
     historyOfPresentIllness: "",
@@ -665,6 +657,13 @@ export default function EncounterPage() {
   /** Administration record stays editable by nurse until provider signs (visit completed). */
   const isAdministrationLocked = status === "completed";
 
+  /** Who can edit by role: nurses edit nursing only; providers and admins edit nursing + provider. */
+  const canEditNursingByRole = profileRole === "nursing" || profileRole === "provider" || profileRole === "admin";
+  const canEditProviderByRole = profileRole === "provider" || profileRole === "admin";
+  const nursingSectionReadOnly = !canEditNursingByRole || isNurseLocked;
+  const administrationSectionReadOnly = !canEditNursingByRole || isAdministrationLocked;
+  const providerSectionReadOnly = !canEditProviderByRole || isProviderLocked;
+
   /** Validate all nursing sections before "Nursing complete". */
   function validateNursingComplete(): string[] {
     const err: string[] = [];
@@ -749,21 +748,11 @@ export default function EncounterPage() {
     { id: "provider", label: "Provider" },
     { id: "addendum", label: "Addendum" },
   ];
-  const isReadyForProviderView = status === "ready_for_provider" || status === "completed";
-  const isProviderUser = profileRole === "provider" || profileRole === "admin";
-  const tabs =
-    currentRole === "provider"
-      ? providerTabs
-      : isReadyForProviderView && isProviderUser
-        ? [...nurseTabs, ...providerTabs]
-        : nurseTabs;
+  const tabs = [...nurseTabs, ...providerTabs];
   const canAccessTab = (tabId: Tab) => tabs.some((t) => t.id === tabId);
-  const effectiveTab = canAccessTab(activeTab) ? activeTab : (currentRole === "nurse" ? "intake" : "provider");
+  const effectiveTab = canAccessTab(activeTab) ? activeTab : "intake";
   const setActiveTabSafe = (id: Tab) => {
-    if ((id === "provider" || id === "addendum") && !isProviderUser) return;
-    if (currentRole === "provider" && id !== "provider" && id !== "addendum") return;
     setValidationErrors([]);
-    if (id === "provider" || id === "addendum") setCurrentRoleState("provider");
     setActiveTab(id);
   };
 
@@ -901,11 +890,11 @@ export default function EncounterPage() {
           </div>
         ) : (
         <>
-        {/* Role switcher: only admins can switch; nursing/provider users see only their section */}
+        {/* Role switcher: only admins can switch view; edit access is by profile role */}
         {canSwitchRole && (
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Access as — admins can switch; nursing and provider users see only their section
+            View as — all roles see all tabs; only sections you are responsible for are editable
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex rounded-md border border-gray-200 dark:border-gray-600">
@@ -964,7 +953,7 @@ export default function EncounterPage() {
                 <textarea
                   value={intake.chiefComplaint}
                   onChange={(e) => handleIntakeChange("chiefComplaint", e.target.value)}
-                  readOnly={isNurseLocked}
+                  readOnly={nursingSectionReadOnly}
                   rows={2}
                   className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
@@ -974,7 +963,7 @@ export default function EncounterPage() {
                 <textarea
                   value={intake.historyOfPresentIllness}
                   onChange={(e) => handleIntakeChange("historyOfPresentIllness", e.target.value)}
-                  readOnly={isNurseLocked}
+                  readOnly={nursingSectionReadOnly}
                   rows={3}
                   className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
@@ -982,7 +971,7 @@ export default function EncounterPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Current Medications</label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Stored on patient profile.</p>
-                {!isNurseLocked && (
+                {!nursingSectionReadOnly && (
                   <div className="mt-2 flex gap-2">
                     <input
                       type="text"
@@ -1000,7 +989,7 @@ export default function EncounterPage() {
                     {medications.map((name, i) => (
                       <li key={`${name}-${i}`} className="flex justify-between text-sm">
                         <span>{name}</span>
-                        {!isNurseLocked && <button type="button" onClick={() => handleRemoveMedication(i)} className="text-red-600 dark:text-red-400">Remove</button>}
+                        {!nursingSectionReadOnly && <button type="button" onClick={() => handleRemoveMedication(i)} className="text-red-600 dark:text-red-400">Remove</button>}
                       </li>
                     ))}
                   </ul>
@@ -1009,7 +998,7 @@ export default function EncounterPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Past Medical History</label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Stored on patient profile.</p>
-                {!isNurseLocked && (
+                {!nursingSectionReadOnly && (
                   <div className="mt-2 flex gap-2">
                     <input
                       type="text"
@@ -1027,13 +1016,13 @@ export default function EncounterPage() {
                     {pastMedicalHistory.map((name, i) => (
                       <li key={`${name}-${i}`} className="flex justify-between text-sm">
                         <span>{name}</span>
-                        {!isNurseLocked && <button type="button" onClick={() => handleRemovePMH(i)} className="text-red-600 dark:text-red-400">Remove</button>}
+                        {!nursingSectionReadOnly && <button type="button" onClick={() => handleRemovePMH(i)} className="text-red-600 dark:text-red-400">Remove</button>}
                       </li>
                     ))}
                   </ul>
                 ) : <p className="mt-2 text-sm text-gray-500">None listed.</p>}
               </div>
-              {status === "in_progress" && currentRole === "nurse" && (
+              {status === "in_progress" && canEditNursingByRole && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
                   <button type="button" onClick={() => setActiveTab("vitals")} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Next → Vitals</button>
                 </div>
@@ -1180,7 +1169,7 @@ export default function EncounterPage() {
                           <td className={isO2OutOfRange(v.oxygenSaturation) ? "py-2 font-medium text-red-600 dark:text-red-400" : "py-2"}>{v.oxygenSaturation || "—"}</td>
                           <td className={isRespiratoryRateOutOfRange(v.respiratoryRate) ? "py-2 font-medium text-red-600 dark:text-red-400" : "py-2"}>{v.respiratoryRate || "—"}</td>
                           <td className="py-2">
-                            {!isNurseLocked && (
+                            {!nursingSectionReadOnly && (
                               <button type="button" onClick={() => handleRemoveVital(v.id)} className="text-red-600 dark:text-red-400 text-xs">Remove</button>
                             )}
                           </td>
@@ -1190,7 +1179,7 @@ export default function EncounterPage() {
                   </table>
                 </div>
               )}
-              {status === "in_progress" && currentRole === "nurse" && (
+              {status === "in_progress" && canEditNursingByRole && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
                   <button type="button" onClick={() => setActiveTab("iv-access")} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Next → IV Access</button>
                 </div>
@@ -1207,7 +1196,7 @@ export default function EncounterPage() {
                 <select
                   value={ivAccess.site}
                   onChange={(e) => handleIvAccessChange("site", e.target.value)}
-                  disabled={isNurseLocked}
+                  disabled={nursingSectionReadOnly}
                   className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 >
                   {IV_SITES.map((opt) => (
@@ -1220,7 +1209,7 @@ export default function EncounterPage() {
                 <select
                   value={ivAccess.gauge}
                   onChange={(e) => handleIvAccessChange("gauge", e.target.value)}
-                  disabled={isNurseLocked}
+                  disabled={nursingSectionReadOnly}
                   className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 >
                   {IV_GAUGES.map((opt) => (
@@ -1235,10 +1224,10 @@ export default function EncounterPage() {
                     type="datetime-local"
                     value={ivAccess.dateTime}
                     onChange={(e) => handleIvAccessChange("dateTime", e.target.value)}
-                    readOnly={isNurseLocked}
+                    readOnly={nursingSectionReadOnly}
                     className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   />
-                  {!isNurseLocked && (
+                  {!nursingSectionReadOnly && (
                     <button
                       type="button"
                       onClick={() => {
@@ -1260,12 +1249,12 @@ export default function EncounterPage() {
                   type="text"
                   value={ivAccess.notes}
                   onChange={(e) => handleIvAccessChange("notes", e.target.value)}
-                  readOnly={isNurseLocked}
+                  readOnly={nursingSectionReadOnly}
                   placeholder="Optional notes..."
                   className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
-              {status === "in_progress" && currentRole === "nurse" && (
+              {status === "in_progress" && canEditNursingByRole && (
                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
                   <button type="button" onClick={() => setActiveTab("order-request")} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Next → Order Request</button>
                 </div>
@@ -1289,7 +1278,7 @@ export default function EncounterPage() {
                         <select
                           value={administration.fluidType}
                           onChange={(e) => handleAdministrationChange("fluidType", e.target.value)}
-                          disabled={isNurseLocked}
+                          disabled={nursingSectionReadOnly}
                           className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                         >
                           {IV_FLUIDS.map((opt) => (
@@ -1305,7 +1294,7 @@ export default function EncounterPage() {
                           step={1}
                           value={administration.volume}
                           onChange={(e) => handleAdministrationChange("volume", e.target.value)}
-                          readOnly={isNurseLocked}
+                          readOnly={nursingSectionReadOnly}
                           placeholder="e.g. 1000"
                           className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                         />
@@ -1318,7 +1307,7 @@ export default function EncounterPage() {
                           step={1}
                           value={administration.rate}
                           onChange={(e) => handleAdministrationChange("rate", e.target.value)}
-                          readOnly={isNurseLocked}
+                          readOnly={nursingSectionReadOnly}
                           placeholder="e.g. 250"
                           className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                         />
@@ -1329,7 +1318,7 @@ export default function EncounterPage() {
                           type="text"
                           value={administration.notes}
                           onChange={(e) => handleAdministrationChange("notes", e.target.value)}
-                          readOnly={isNurseLocked}
+                          readOnly={nursingSectionReadOnly}
                           placeholder="Optional..."
                           className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                         />
@@ -1342,9 +1331,9 @@ export default function EncounterPage() {
                         {ADDITIVES_VITAMINS_OPTIONS.map((option) => (
                           <label
                             key={option}
-                            className={`flex items-center gap-2 rounded border px-3 py-2 text-sm ${isNurseLocked ? "cursor-default border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-800" : "cursor-pointer border-gray-200 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"} ${additivesSelected.has(option) ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400" : ""}`}
+                            className={`flex items-center gap-2 rounded border px-3 py-2 text-sm ${nursingSectionReadOnly ? "cursor-default border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-800" : "cursor-pointer border-gray-200 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"} ${additivesSelected.has(option) ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400" : ""}`}
                           >
-                            <input type="checkbox" checked={additivesSelected.has(option)} onChange={() => handleAdditiveToggle(option)} disabled={isNurseLocked} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" />
+                            <input type="checkbox" checked={additivesSelected.has(option)} onChange={() => handleAdditiveToggle(option)} disabled={nursingSectionReadOnly} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" />
                             <span className="text-gray-800 dark:text-gray-200">{option}</span>
                           </label>
                         ))}
@@ -1357,9 +1346,9 @@ export default function EncounterPage() {
                         {ADDITIVES_MEDICATIONS_OPTIONS.map((option) => (
                           <label
                             key={option}
-                            className={`flex items-center gap-2 rounded border px-3 py-2 text-sm ${isNurseLocked ? "cursor-default border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-800" : "cursor-pointer border-gray-200 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"} ${medicationsSelected.has(option) ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400" : ""}`}
+                            className={`flex items-center gap-2 rounded border px-3 py-2 text-sm ${nursingSectionReadOnly ? "cursor-default border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-800" : "cursor-pointer border-gray-200 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"} ${medicationsSelected.has(option) ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400" : ""}`}
                           >
-                            <input type="checkbox" checked={medicationsSelected.has(option)} onChange={() => handleMedicationToggle(option)} disabled={isNurseLocked} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" />
+                            <input type="checkbox" checked={medicationsSelected.has(option)} onChange={() => handleMedicationToggle(option)} disabled={nursingSectionReadOnly} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" />
                             <span className="text-gray-800 dark:text-gray-200">{option}</span>
                           </label>
                         ))}
@@ -1406,11 +1395,11 @@ export default function EncounterPage() {
                   </div>
                 </div>
               </div>
-              {status === "in_progress" && currentRole === "nurse" && (
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                  <button type="button" onClick={handleNursingComplete} className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Nursing complete</button>
-                </div>
-              )}
+{status === "in_progress" && canEditNursingByRole && (
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <button type="button" onClick={handleNursingComplete} className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Nursing complete</button>
+                  </div>
+                )}
             </div>
           )}
 
@@ -1430,7 +1419,7 @@ export default function EncounterPage() {
                         type="datetime-local"
                         value={administration.startTime}
                         onChange={(e) => handleAdministrationChange("startTime", e.target.value)}
-                        readOnly={isAdministrationLocked}
+                        readOnly={administrationSectionReadOnly}
                         className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                       />
                       {!isAdministrationLocked && (
@@ -1456,7 +1445,7 @@ export default function EncounterPage() {
                         type="datetime-local"
                         value={administration.endTime}
                         onChange={(e) => handleAdministrationChange("endTime", e.target.value)}
-                        readOnly={isAdministrationLocked}
+                        readOnly={administrationSectionReadOnly}
                         className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                       />
                       {!isAdministrationLocked && (
@@ -1491,7 +1480,7 @@ export default function EncounterPage() {
                     <textarea
                       value={administration.complications ?? ""}
                       onChange={(e) => handleAdministrationChange("complications", e.target.value)}
-                      readOnly={isAdministrationLocked}
+                      readOnly={administrationSectionReadOnly}
                       rows={2}
                       placeholder="e.g. None, or describe any complications..."
                       className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -1512,7 +1501,7 @@ export default function EncounterPage() {
                             name="toleranceOption"
                             checked={(administration.toleranceOption ?? "") === opt.value}
                             onChange={() => handleAdministrationChange("toleranceOption", opt.value)}
-                            disabled={isAdministrationLocked}
+                            disabled={administrationSectionReadOnly}
                             className="h-4 w-4 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                           />
                           <span className="text-sm text-gray-900 dark:text-white">{opt.label}</span>
@@ -1522,7 +1511,7 @@ export default function EncounterPage() {
                     <textarea
                       value={administration.tolerance ?? ""}
                       onChange={(e) => handleAdministrationChange("tolerance", e.target.value)}
-                      readOnly={isAdministrationLocked}
+                      readOnly={administrationSectionReadOnly}
                       rows={2}
                       placeholder={(administration.toleranceOption === "tolerated_complications" || administration.toleranceOption === "unable_to_tolerate") ? "Required: describe reasoning..." : "e.g. Tolerated well, no adverse effects..."}
                       className="mt-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -1541,7 +1530,7 @@ export default function EncounterPage() {
                           By {administration.readyForDischargeBy || "Nurse"} on {administration.readyForDischargeAt ? new Date(administration.readyForDischargeAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : ""} — pending provider review.
                         </p>
                       </div>
-                    ) : !isAdministrationLocked ? (
+                    ) : !administrationSectionReadOnly ? (
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">When the infusion is complete and the patient is ready to go, mark them ready for discharge. The provider will review and sign to complete the visit.</p>
                         <button
@@ -1704,7 +1693,7 @@ export default function EncounterPage() {
                       <p className="mt-0.5 text-gray-900 dark:text-white">{administration.additivesMedications || "None"}</p>
                     </div>
                     {administration.notes ? <div><strong className="text-gray-600 dark:text-gray-400">Order notes:</strong> <span className="text-gray-900 dark:text-white">{administration.notes}</span></div> : null}
-                    {!orderApproved && status === "ready_for_provider" && (
+                    {!orderApproved && status === "ready_for_provider" && canEditProviderByRole && (
                       <div className="pt-2 flex flex-wrap items-end gap-4">
                         <button type="button" onClick={handleApproveOrder} className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Approve order</button>
                       </div>
@@ -1712,7 +1701,7 @@ export default function EncounterPage() {
                     {orderApproved && (
                       <p className="text-xs text-green-600 dark:text-green-400 pt-1">Approved by {administration.orderApprovedBy} {administration.orderApprovedAt ? new Date(administration.orderApprovedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }) : ""}</p>
                     )}
-                    {status === "ready_for_provider" && (
+                    {status === "ready_for_provider" && canEditProviderByRole && (
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Decline to treat</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">If you decline to treat this patient based on the information provided, document the reason below (optional) and confirm.</p>
@@ -1770,13 +1759,13 @@ export default function EncounterPage() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Provider note & discharge</h2>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Provider note <span className="text-red-600 dark:text-red-400">*</span></label>
-                  <textarea value={providerNote} onChange={(e) => handleProviderNoteChange(e.target.value)} readOnly={isProviderLocked} rows={4} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                  <textarea value={providerNote} onChange={(e) => handleProviderNoteChange(e.target.value)} readOnly={providerSectionReadOnly} rows={4} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Discharge instructions <span className="text-red-600 dark:text-red-400">*</span></label>
-                  <textarea value={discharge} onChange={(e) => handleDischargeChange(e.target.value)} readOnly={isProviderLocked} rows={3} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                  <textarea value={discharge} onChange={(e) => handleDischargeChange(e.target.value)} readOnly={providerSectionReadOnly} rows={3} className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                 </div>
-                {status === "ready_for_provider" && (
+                {status === "ready_for_provider" && canEditProviderByRole && (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
                     <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">Signing indicates you have reviewed the administration record (start/end times, complications, tolerance) and approve this visit as complete.</p>
                     <button type="button" onClick={handleProviderSigned} className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Sign to complete visit</button>
@@ -1789,17 +1778,21 @@ export default function EncounterPage() {
           {effectiveTab === "addendum" && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Addendum</h2>
-              <div className="flex gap-2">
-                <textarea value={newAddendum} onChange={(e) => setNewAddendum(e.target.value)} rows={2} placeholder="Add addendum..." className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
-                <button type="button" onClick={handleAddAddendum} disabled={!newAddendum.trim()} className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50">Add</button>
-              </div>
+              {canEditProviderByRole && !providerSectionReadOnly && (
+                <div className="flex gap-2">
+                  <textarea value={newAddendum} onChange={(e) => setNewAddendum(e.target.value)} rows={2} placeholder="Add addendum..." className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                  <button type="button" onClick={handleAddAddendum} disabled={!newAddendum.trim()} className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50">Add</button>
+                </div>
+              )}
               {addenda.length > 0 && (
                 <ul className="space-y-2">
                   {addenda.map((a) => (
                     <li key={a.id} className="rounded border border-gray-200 bg-gray-50 p-2 text-sm dark:border-gray-600 dark:bg-gray-800">
                       <span className="text-gray-500 dark:text-gray-400">{a.authorName} · {new Date(a.createdAt).toLocaleString()}</span>
                       <p className="mt-1">{a.text}</p>
-                      <button type="button" onClick={() => handleRemoveAddendum(a.id)} className="mt-1 text-xs text-red-600 dark:text-red-400">Remove</button>
+                      {canEditProviderByRole && !providerSectionReadOnly && (
+                        <button type="button" onClick={() => handleRemoveAddendum(a.id)} className="mt-1 text-xs text-red-600 dark:text-red-400">Remove</button>
+                      )}
                     </li>
                   ))}
                 </ul>
