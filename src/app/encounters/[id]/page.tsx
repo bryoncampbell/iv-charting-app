@@ -1237,10 +1237,11 @@ export default function EncounterPage() {
           )}
 
           {effectiveTab === "order-request" && (
-            <div className="space-y-6 flex flex-col lg:flex-row lg:gap-6 lg:items-start">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 lg:sr-only">Nursing — order request</p>
-              <div className="flex-1 min-w-0">
-                <section className="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-600 dark:bg-gray-800/50">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col lg:flex-row lg:gap-6 lg:items-start">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 lg:sr-only">Nursing — order request</p>
+                <div className="flex-1 min-w-0">
+                  <section className="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-600 dark:bg-gray-800/50">
                   <h2 className="text-base font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2 mb-4">
                     Order request — sent to provider for review and approval
                   </h2>
@@ -1346,29 +1347,30 @@ export default function EncounterPage() {
                     </div>
                   </div>
                 </section>
-              </div>
+                </div>
 
-              {/* Pricing menu — sticky on right on desktop; on mobile see tally at bottom of form */}
-              <div className="hidden lg:block lg:w-72 lg:shrink-0 lg:sticky lg:top-6">
-                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow dark:border-gray-600 dark:bg-gray-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2 mb-3">Pricing</h3>
-                  <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                    {orderPricing.lineItems.map((item, i) => (
-                      <li key={i} className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
-                        <span>${item.amount.toFixed(2)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-between text-base font-semibold text-gray-900 dark:text-white">
-                    <span>Total</span>
-                    <span>${orderPricing.total.toFixed(2)}</span>
-                  </p>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Vitamins included in base fee. Zofran/Toradol +$30 each. Extra 500 mL +$20.</p>
+                {/* Pricing menu — sticky on right on desktop; on mobile see tally at bottom of form */}
+                <div className="hidden lg:block lg:w-72 lg:shrink-0 lg:sticky lg:top-6">
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 shadow dark:border-gray-600 dark:bg-gray-800">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2 mb-3">Pricing</h3>
+                    <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                      {orderPricing.lineItems.map((item, i) => (
+                        <li key={i} className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
+                          <span>${item.amount.toFixed(2)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-between text-base font-semibold text-gray-900 dark:text-white">
+                      <span>Total</span>
+                      <span>${orderPricing.total.toFixed(2)}</span>
+                    </p>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Vitamins included in base fee. Zofran/Toradol +$30 each. Extra 500 mL +$20.</p>
+                  </div>
                 </div>
               </div>
               {status === "in_progress" && currentRole === "nurse" && (
-                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600 w-full">
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
                   <button type="button" onClick={handleNursingComplete} className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Nursing complete</button>
                 </div>
               )}
