@@ -665,7 +665,8 @@ export default function EncounterPage() {
   const isAdministrationLocked = status === "completed";
 
   /** Who can edit by role: nurses edit nursing only; providers and admins edit nursing + provider. */
-  const canEditNursingByRole = roleLower === "nursing" || roleLower === "provider" || roleLower === "admin";
+  const canEditNursingByRole =
+    roleLower === "nursing" || roleLower === "provider" || roleLower === "admin" || roleLower === "";
   const canEditProviderByRole = roleLower === "provider" || roleLower === "admin";
   const canShowApproveDecline = treatAsProviderForActions;
   const nursingSectionReadOnly = !canEditNursingByRole || isNurseLocked;
