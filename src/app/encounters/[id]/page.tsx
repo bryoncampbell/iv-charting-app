@@ -996,6 +996,11 @@ export default function EncounterPage() {
                   </ul>
                 ) : <p className="mt-2 text-sm text-gray-500">None listed.</p>}
               </div>
+              {status === "in_progress" && currentRole === "nurse" && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <button type="button" onClick={() => setActiveTab("vitals")} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Next → Vitals</button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1148,6 +1153,11 @@ export default function EncounterPage() {
                   </table>
                 </div>
               )}
+              {status === "in_progress" && currentRole === "nurse" && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <button type="button" onClick={() => setActiveTab("iv-access")} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Next → IV Access</button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1218,6 +1228,11 @@ export default function EncounterPage() {
                   className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
+              {status === "in_progress" && currentRole === "nurse" && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <button type="button" onClick={() => setActiveTab("order-request")} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Next → Order Request</button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1352,6 +1367,11 @@ export default function EncounterPage() {
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Vitamins included in base fee. Zofran/Toradol +$30 each. Extra 500 mL +$20.</p>
                 </div>
               </div>
+              {status === "in_progress" && currentRole === "nurse" && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600 w-full">
+                  <button type="button" onClick={handleNursingComplete} className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Nursing complete</button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1749,11 +1769,6 @@ export default function EncounterPage() {
           )}
         </div>
 
-        {status === "in_progress" && currentRole === "nurse" && (effectiveTab === "intake" || effectiveTab === "vitals" || effectiveTab === "iv-access" || effectiveTab === "order-request") && (
-          <div className="mt-6">
-            <button type="button" onClick={handleNursingComplete} className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Nursing complete</button>
-          </div>
-        )}
         </>
         )}
       </div>
