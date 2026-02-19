@@ -44,6 +44,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sendingResetId, setSendingResetId] = useState<string | null>(null);
+  const [clearingMustResetId, setClearingMustResetId] = useState<string | null>(null);
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
   const [createEmail, setCreateEmail] = useState("");
   const [createDisplayName, setCreateDisplayName] = useState("");
@@ -115,6 +116,25 @@ export default function AdminPage() {
     } catch (e) {
       alert((e as Error).message);
       setEditingId(null);
+    }
+  };
+
+  const handleClearMustReset = async (userId: string) => {
+    if (!auth?.session?.access_token) return;
+    setClearingMustResetId(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/clear-must-reset`, {
+        method: "POST",
+        headers: getAuthHeaders(auth.session),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? res.statusText);
+      }
+      setClearingMustResetId(null);
+    } catch (e) {
+      alert((e as Error).message);
+      setClearingMustResetId(null);
     }
   };
 
@@ -532,6 +552,15 @@ on conflict (user_id) do update set role = 'admin', is_active = true;`}
                         className="text-gray-600 dark:text-gray-400 hover:underline mr-3"
                       >
                         Edit profile
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleClearMustReset(u.id)}
+                        disabled={clearingMustResetId === u.id}
+                        className="text-gray-600 dark:text-gray-400 hover:underline disabled:opacity-50 mr-3"
+                        title="Clear must-reset-password so user can sign in without being sent to set-password page"
+                      >
+                        {clearingMustResetId === u.id ? "Clearing…" : "Clear must reset"}
                       </button>
                       <button
                         type="button"
