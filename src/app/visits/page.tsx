@@ -211,7 +211,7 @@ export default function VisitsPage() {
               Visits
             </h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Track and manage patient visits. Click any visit to review details.
+              Check in patients (New Visit), complete nursing documentation, then providers review visits tagged &quot;Waiting for provider&quot; and approve or decline. Click any visit to open it.
             </p>
           </div>
           <button
@@ -312,7 +312,7 @@ export default function VisitsPage() {
                       colSpan={5}
                       className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400 sm:px-6"
                     >
-                      No visits in progress. Start a visit from a patient profile or check completed visits below.
+                      No visits in progress. Click <strong>New Visit</strong> above to check in a patient (search or add new), then start the visit.
                     </td>
                   </tr>
                 ) : (
