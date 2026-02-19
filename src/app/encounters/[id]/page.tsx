@@ -148,10 +148,10 @@ export default function EncounterPage() {
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("intake");
+  const [activeTab, setActiveTab] = useState<Tab>(() => (profileRole === "provider" ? "provider" : "intake"));
   const [isLoading, setIsLoading] = useState(true);
 
-  const [currentRoleState, setCurrentRoleState] = useState<Role>("nurse");
+  const [currentRoleState, setCurrentRoleState] = useState<Role>(() => (profileRole === "provider" ? "provider" : "nurse"));
   const currentRole = lockedRole ?? currentRoleState;
   const setCurrentRole = (r: Role) => {
     if (canSwitchRole) setCurrentRoleState(r);
