@@ -5,17 +5,26 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
-function signedInLabel(profile: { first_name?: string | null; last_name?: string | null; display_name?: string | null } | null): string {
-  const name = profile
-    ? [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() || (profile.display_name ?? "").trim()
-    : "";
-  return name || "Account";
+function signedInLabel(
+  profile: { first_name?: string | null; last_name?: string | null; display_name?: string | null } | null,
+  email?: string | null
+): string {
+  if (!profile) {
+    return email?.trim() || "Account";
+  }
+  const firstName = (profile.first_name ?? "").trim();
+  const lastName = (profile.last_name ?? "").trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+  if (fullName) return fullName;
+  const displayName = (profile.display_name ?? "").trim();
+  if (displayName) return displayName;
+  return email?.trim() || "Account";
 }
 
 export default function Navigation() {
   const pathname = usePathname();
   const auth = useAuth();
-  const signedInText = auth?.user ? signedInLabel(auth.profile) : "";
+  const signedInText = auth?.user ? signedInLabel(auth.profile, auth.user.email ?? null) : "";
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: "📊" },

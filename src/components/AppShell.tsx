@@ -44,10 +44,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Admin access is enforced by the admin page via API (so admins whose profile didn't load can still get in)
   }, [auth?.loading, auth?.user, auth?.profile, auth?.isActive, isPublicRoute, isSetPassword, mustResetPassword, router]);
 
-  // License warning: persistent banner below nav when license is expiring/expired (dashboard has its own inline banner too)
-  const profile = auth?.profile;
-  const licenseExpiring = profile ? shouldShowLicenseWarning(profile) : false;
-
   if (isPublicSummary || isSetPassword || isLogin) {
     return <>{children}</>;
   }
@@ -68,45 +64,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const showLicenseWarning = licenseExpiring;
-  const licenseExpired = profile && (profile.license_expiry ?? (profile as { license_expiry?: string }).license_expiry) && isLicenseExpired(profile.license_expiry ?? (profile as { license_expiry?: string }).license_expiry);
-
   return (
     <>
       <Navigation />
-      {showLicenseWarning && (
-        <div
-          className={`no-print border-b ${
-            licenseExpired
-              ? "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700"
-              : "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700"
-          }`}
-        >
-          <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 flex items-center justify-between gap-4 flex-wrap">
-            <p
-              className={`text-sm ${
-                licenseExpired ? "text-red-800 dark:text-red-200" : "text-amber-800 dark:text-amber-200"
-              }`}
-            >
-              {licenseExpired
-                ? "Your license has expired. Please update your license information so chart signing remains accurate."
-                : profile?.license_expiry || (profile as { license_expiry?: string })?.license_expiry
-                  ? "Your license expires within 30 days or has expired. Please update your license information so chart signing remains accurate."
-                  : "Please set your license expiry date in your profile so chart signing remains accurate."}
-            </p>
-            <Link
-              href="/profile"
-              className={`shrink-0 rounded px-3 py-1.5 text-sm font-medium text-white ${
-                licenseExpired
-                  ? "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
-                  : "bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600"
-              }`}
-            >
-              Update profile
-            </Link>
-          </div>
-        </div>
-      )}
       <main className="pb-20 md:pb-0">{children}</main>
     </>
   );

@@ -80,7 +80,9 @@ export function logAudit(
         details: details ?? null,
       })
       .then(({ error }) => {
-        if (error) console.error("Error writing audit log to Supabase:", error);
+        if (error) {
+          // Ignore audit log write failures in production; they shouldn't block user flows.
+        }
       });
     return;
   }

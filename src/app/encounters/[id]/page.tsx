@@ -583,8 +583,12 @@ export default function EncounterPage() {
     const signedBy = signingLabel?.trim() || "Provider";
     setStatus("completed");
     setProviderSignedBy(signedBy);
-    saveEncounter({ status: "completed", providerSignedAt: nowIso(), providerSignedBy: signedBy });
-    if (encounter) logAudit("encounter.sign.provider_signed", "encounter", encounter.id, undefined);
+    saveEncounter({ status: "completed", providerSignedAt: nowIso(), providerSignedBy: signedBy })
+      .then(() => {
+        if (encounter) logAudit("encounter.sign.provider_signed", "encounter", encounter.id, undefined);
+        router.push("/visits");
+      })
+      .catch(() => {});
   };
 
   const handleDeclineToTreat = () => {

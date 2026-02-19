@@ -52,23 +52,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [loadSession]);
 
-  const loadProfile = useCallback(async (uid: string) => {
-    if (!supabase) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, user_id, email, display_name, role, is_active, created_at, updated_at, first_name, last_name, date_of_birth, phone, street_address, city, state, zip_code, license_type, license_number, license_state, license_expiry")
-      .eq("user_id", uid)
-      .maybeSingle();
-    setProfile(data as Profile | null);
+  const loadProfile = useCallback(async (uid: string, accessToken?: string) => {
+    if (!isSupabaseConfigured()) return;
+    // Use API endpoint (admin service role) for reliable profile loading
+    if (accessToken) {
+      try {
+        const res = await fetch("/api/profile", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (res.ok) {
+          const { profile: profileData } = await res.json();
+          setProfile(profileData as Profile | null);
+          return;
+        }
+      } catch (e) {
+        console.error("Error loading profile from API:", e);
+      }
+    }
+    // Fallback to direct Supabase query (requires RLS)
+    if (supabase) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, user_id, email, display_name, role, is_active, created_at, updated_at, first_name, last_name, date_of_birth, phone, street_address, city, state, zip_code, license_type, license_number, license_state, license_expiry")
+        .eq("user_id", uid)
+        .maybeSingle();
+      setProfile(data as Profile | null);
+    }
   }, []);
 
   useEffect(() => {
-    if (!user?.id || !isSupabaseConfigured() || !supabase) {
+    if (!user?.id || !isSupabaseConfigured()) {
       setProfile(null);
       return;
     }
-    loadProfile(user.id);
-  }, [user?.id, loadProfile]);
+    loadProfile(user.id, session?.access_token);
+  }, [user?.id, session?.access_token, loadProfile]);
 
   const signInWithPassword = useCallback(async (email: string, password: string) => {
     if (!supabase) return { error: new Error("Supabase not configured") };
@@ -103,8 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user?.id) await loadProfile(user.id);
-  }, [user?.id, loadProfile]);
+    if (user?.id) await loadProfile(user.id, session?.access_token);
+  }, [user?.id, session?.access_token, loadProfile]);
 
   const role = profile?.role ?? null;
   const isAdmin = profile?.role === "admin" && (profile?.is_active ?? false);
