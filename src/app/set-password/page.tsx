@@ -58,6 +58,8 @@ export default function SetPasswordPage() {
         setLoading(false);
         return;
       }
+      // Refresh session so client gets updated app_metadata (must_reset_password: false)
+      await supabase.auth.refreshSession();
     }
     setLoading(false);
     router.replace("/dashboard");
