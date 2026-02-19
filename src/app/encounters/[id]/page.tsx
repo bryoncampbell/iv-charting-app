@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Administration, Encounter, Patient, Vital } from "@/types";
 import { getPatientDisplayName } from "@/types";
@@ -139,6 +139,7 @@ function profileRoleToUiRole(role: string | null): Role {
 export default function EncounterPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const auth = useAuth();
   const encounterId = params.id as string;
 
@@ -159,7 +160,15 @@ export default function EncounterPage() {
 
   const signingLabel = profileSigningLabel(auth?.profile ?? null);
 
-  // When user is provider, always open on provider tab (profile loads async so sync when role becomes available)
+  // URL ?tab=provider: when opening encounter from visits list as provider, we pass this so we open on provider tab
+  useEffect(() => {
+    if (searchParams.get("tab") === "provider") {
+      setCurrentRoleState("provider");
+      setActiveTab("provider");
+    }
+  }, [searchParams]);
+
+  // When user is provider (from profile), sync role and tab
   useEffect(() => {
     if (lockedRole != null) {
       setCurrentRoleState(lockedRole);

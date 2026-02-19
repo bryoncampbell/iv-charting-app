@@ -7,12 +7,14 @@ import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { encounterRowToEncounter } from "@/lib/supabaseMappers";
+import { useAuth } from "@/contexts/AuthContext";
 
 type DateFilter = "today" | "last7days" | "all";
 
 export default function VisitsPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const auth = useAuth();
   const [allVisits, setAllVisits] = useState<Encounter[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>("last7days");
 
@@ -317,7 +319,7 @@ export default function VisitsPage() {
                   currentVisits.map((visit) => (
                     <tr
                       key={visit.id}
-                      onClick={() => router.push(`/encounters/${visit.id}`)}
+                      onClick={() => router.push(auth?.role === "provider" ? `/encounters/${visit.id}?tab=provider` : `/encounters/${visit.id}`)}
                       className="cursor-pointer transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
                       title="Click to review visit details"
                     >
