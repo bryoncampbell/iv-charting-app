@@ -10,6 +10,7 @@ import { parseLocalDate } from "@/lib/dates";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { patientRowToPatient, patientToRow } from "@/lib/supabaseMappers";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Format phone number to (XXX) XXX-XXXX
 const formatPhoneNumber = (value: string): string => {
@@ -30,6 +31,7 @@ const normalizePhoneNumber = (phone: string): string => {
 
 export default function PatientsPage() {
   const router = useRouter();
+  const auth = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,10 +42,50 @@ export default function PatientsPage() {
     phone: "",
   });
 
-  // Load patients on mount: Supabase when configured, else localStorage
+  // Load patients: use API (service role) when Supabase + session so all users see all patients; else client Supabase or localStorage
   useEffect(() => {
     let cancelled = false;
     if (isSupabaseConfigured() && supabase) {
+      const token = auth?.session?.access_token;
+      if (token) {
+        fetch("/api/patients", { headers: { Authorization: `Bearer ${token}` } })
+          .then((res) => {
+            if (cancelled) return;
+            if (!res.ok) {
+              if (res.status === 503) {
+                // No service role – fall back to client (RLS applies)
+                return supabase.from("patients").select("*").order("created_at", { ascending: false }) as Promise<{ data: unknown[] | null; error: unknown }>;
+              }
+              return Promise.resolve({ data: null, error: new Error(res.statusText) });
+            }
+            return res.json().then((body: { data?: unknown[] }) => ({ data: body.data ?? [], error: null }));
+          })
+          .then((result) => {
+            if (cancelled || !result) return;
+            const data = result.data ?? [];
+            const error = result.error;
+            if (error) {
+              console.error("Error loading patients:", error);
+              setPatients([]);
+              return;
+            }
+            const list = (data as unknown[]).map((row) => patientRowToPatient(row));
+            const formatted = list.map((p) => ({
+              ...p,
+              phone: p.phone ? formatPhoneNumber(normalizePhoneNumber(p.phone)) : undefined,
+              allergies: p.allergies ?? [],
+            }));
+            setPatients(formatted);
+          })
+          .catch((err) => {
+            if (!cancelled) {
+              console.error("Error loading patients:", err);
+              setPatients([]);
+            }
+          });
+        return () => { cancelled = true; };
+      }
+      // No session yet – use client Supabase (RLS applies)
       supabase
         .from("patients")
         .select("*")
@@ -84,7 +126,7 @@ export default function PatientsPage() {
       setPatients([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auth?.session?.access_token]);
 
   // Save patients to localStorage
   const savePatients = (patientsToSave: Patient[]) => {
@@ -95,7 +137,7 @@ export default function PatientsPage() {
     }
   };
 
-  // Strict search: only patients matching name (prefix), DOB (prefix/exact), or phone (prefix/exact)
+  // Show all established patients; filter by name, DOB, or phone when user types 2+ characters
   const searchTrimmed = searchQuery.trim();
   const MIN_SEARCH_LENGTH = 2;
   const MIN_PHONE_DIGITS = 3;
@@ -103,7 +145,7 @@ export default function PatientsPage() {
 
   const filteredPatients =
     searchTrimmed.length < MIN_SEARCH_LENGTH
-      ? []
+      ? patients
       : patients.filter((patient) => {
           const q = searchTrimmed.toLowerCase();
           const normQ = normalizePhoneNumber(searchTrimmed);
@@ -286,27 +328,15 @@ export default function PatientsPage() {
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {searchTrimmed
                 ? `${filteredPatients.length} ${filteredPatients.length === 1 ? "patient" : "patients"} matching "${searchTrimmed}"`
-                : "Enter name, date of birth, or phone number to search for patients."}
+                : `${patients.length} established ${patients.length === 1 ? "patient" : "patients"}. Filter by name, date of birth, or phone (2+ characters).`}
             </p>
           </div>
 
           <div className="overflow-x-auto">
-            {!searchTrimmed ? (
+            {filteredPatients.length === 0 ? (
               <div className="px-6 py-12 text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enter name, date of birth, or phone number to search (at least 2 characters).
-                </p>
-              </div>
-            ) : searchTrimmed.length < MIN_SEARCH_LENGTH ? (
-              <div className="px-6 py-12 text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enter at least 2 characters to search.
-                </p>
-              </div>
-            ) : filteredPatients.length === 0 ? (
-              <div className="px-6 py-12 text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No patients found matching your search.
+                  {searchTrimmed ? "No patients found matching your search." : "No established patients yet."}
                 </p>
               </div>
             ) : (

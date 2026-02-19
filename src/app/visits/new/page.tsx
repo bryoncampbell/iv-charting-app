@@ -39,6 +39,37 @@ export default function NewVisitPage() {
 
   useEffect(() => {
     if (isSupabaseConfigured() && supabase) {
+      const token = auth?.session?.access_token;
+      if (token) {
+        fetch("/api/patients", { headers: { Authorization: `Bearer ${token}` } })
+          .then((res) => {
+            if (!res.ok) {
+              if (res.status === 503) {
+                return supabase.from("patients").select("*").order("created_at", { ascending: false }) as Promise<{ data: unknown[] | null; error: unknown }>;
+              }
+              return Promise.resolve({ data: null, error: new Error(res.statusText) });
+            }
+            return res.json().then((body: { data?: unknown[] }) => ({ data: body.data ?? [], error: null }));
+          })
+          .then((result) => {
+            if (!result) return;
+            const data = result.data ?? [];
+            const err = result.error;
+            if (err) {
+              setPatients([]);
+              return;
+            }
+            const list = (data as unknown[]).map((row) => patientRowToPatient(row));
+            const formatted = list.map((p) => ({
+              ...p,
+              phone: p.phone ? formatPhoneNumber(normalizePhoneNumber(p.phone)) : undefined,
+              allergies: p.allergies ?? [],
+            }));
+            setPatients(formatted);
+          })
+          .catch(() => setPatients([]));
+        return;
+      }
       supabase
         .from("patients")
         .select("*")
@@ -76,7 +107,7 @@ export default function NewVisitPage() {
     } else {
       setPatients([]);
     }
-  }, []);
+  }, [auth?.session?.access_token]);
 
   function savePatients(patientsToSave: Patient[]) {
     try {
@@ -93,7 +124,7 @@ export default function NewVisitPage() {
 
   const filteredPatients =
     searchTrimmed.length < MIN_SEARCH_LENGTH
-      ? []
+      ? patients
       : patients.filter((p) => {
           const q = searchTrimmed.toLowerCase();
           const normQ = normalizePhoneNumber(searchTrimmed);
@@ -253,35 +284,23 @@ export default function NewVisitPage() {
           </div>
         </div>
 
-        {/* Results — only show patients matching search (name, DOB, or phone) */}
+        {/* Results — show established patients; filter by name, DOB, or phone when 2+ chars */}
         <div className="mt-6 rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-              {searchTrimmed ? "Search results" : "Search for a patient"}
+              {searchTrimmed ? "Search results" : "Established patients"}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {searchTrimmed
                 ? `${filteredPatients.length} ${filteredPatients.length === 1 ? "patient" : "patients"} matching "${searchTrimmed}"`
-                : "Enter name, date of birth, or phone number to see matching patients."}
+                : `${patients.length} established ${patients.length === 1 ? "patient" : "patients"}. Filter by name, date of birth, or phone (2+ characters).`}
             </p>
           </div>
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {!searchTrimmed ? (
+            {filteredPatients.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enter name, date of birth, or phone number to search (at least 2 characters).
-                </p>
-              </div>
-            ) : searchTrimmed.length < MIN_SEARCH_LENGTH ? (
-              <div className="px-4 py-8 text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enter at least 2 characters to search.
-                </p>
-              </div>
-            ) : filteredPatients.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No patients found matching your search.
+                  {searchTrimmed ? "No patients found matching your search." : "No established patients yet."}
                 </p>
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                   Add a new patient to get started.
