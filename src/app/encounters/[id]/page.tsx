@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Administration, Encounter, Patient, Vital } from "@/types";
@@ -160,13 +160,24 @@ export default function EncounterPage() {
 
   const signingLabel = profileSigningLabel(auth?.profile ?? null);
 
-  // URL ?tab=provider: when opening encounter from visits list as provider, we pass this so we open on provider tab
-  useEffect(() => {
+  // URL ?tab=provider: apply before paint so provider sees provider tab immediately when opening from visits list
+  useLayoutEffect(() => {
     if (searchParams.get("tab") === "provider") {
       setCurrentRoleState("provider");
       setActiveTab("provider");
     }
   }, [searchParams]);
+
+  // When encounter is ready for provider (nurse marked complete), open on provider tab for provider users (different device)
+  useEffect(() => {
+    const encounterStatus = encounter?.status;
+    const isReadyForProvider = encounterStatus === "ready_for_provider" || encounterStatus === "completed";
+    const isProviderUser = profileRole === "provider" || searchParams.get("tab") === "provider";
+    if (isReadyForProvider && isProviderUser) {
+      setCurrentRoleState("provider");
+      setActiveTab("provider");
+    }
+  }, [encounter?.id, encounter?.status, profileRole, searchParams]);
 
   // When user is provider (from profile), sync role and tab
   useEffect(() => {
@@ -738,7 +749,13 @@ export default function EncounterPage() {
     { id: "provider", label: "Provider" },
     { id: "addendum", label: "Addendum" },
   ];
-  const tabs = currentRole === "nurse" ? nurseTabs : providerTabs;
+  const isReadyForProviderView = status === "ready_for_provider" || status === "completed";
+  const tabs =
+    currentRole === "provider"
+      ? providerTabs
+      : isReadyForProviderView
+        ? [...nurseTabs, ...providerTabs]
+        : nurseTabs;
   const canAccessTab = (tabId: Tab) => tabs.some((t) => t.id === tabId);
   const effectiveTab = canAccessTab(activeTab) ? activeTab : (currentRole === "nurse" ? "intake" : "provider");
   const setActiveTabSafe = (id: Tab) => {
