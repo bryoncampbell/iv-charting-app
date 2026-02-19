@@ -46,7 +46,9 @@ export default function NewVisitPage() {
           .then((res): Promise<{ data: unknown[] | null; error: unknown }> => {
             if (!res.ok) {
               if (res.status === 503) {
-                return client.from("patients").select("*").order("created_at", { ascending: false }).then((r) => ({ data: r.data ?? null, error: (r.error ?? null) as unknown }));
+                return Promise.resolve(
+                  client.from("patients").select("*").order("created_at", { ascending: false }).then((r) => ({ data: r.data ?? null, error: (r.error ?? null) as unknown }))
+                );
               }
               return Promise.resolve({ data: null, error: new Error(res.statusText) as unknown });
             }
