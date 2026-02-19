@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import type { AppRole } from "@/types/profile";
 import { shouldShowLicenseWarning, getLicenseExpiryStatus } from "@/types/profile";
 
 interface LicenseExpiryBannerProps {
@@ -37,7 +38,11 @@ export default function LicenseExpiryBanner({ accessToken }: LicenseExpiryBanner
   }, [accessToken]);
 
   const profileForWarning = profile
-    ? { license_type: profile.license_type ?? null, license_expiry: profile.license_expiry ?? null, role: profile.role ?? null }
+    ? {
+        license_type: profile.license_type ?? null,
+        license_expiry: profile.license_expiry ?? null,
+        role: (profile.role ?? null) as AppRole | null,
+      }
     : null;
   if (!loaded || !profile || !shouldShowLicenseWarning(profileForWarning)) return null;
 
