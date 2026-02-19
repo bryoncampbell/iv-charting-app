@@ -750,18 +750,20 @@ export default function EncounterPage() {
     { id: "addendum", label: "Addendum" },
   ];
   const isReadyForProviderView = status === "ready_for_provider" || status === "completed";
+  const isProviderUser = profileRole === "provider" || profileRole === "admin";
   const tabs =
     currentRole === "provider"
       ? providerTabs
-      : isReadyForProviderView
+      : isReadyForProviderView && isProviderUser
         ? [...nurseTabs, ...providerTabs]
         : nurseTabs;
   const canAccessTab = (tabId: Tab) => tabs.some((t) => t.id === tabId);
   const effectiveTab = canAccessTab(activeTab) ? activeTab : (currentRole === "nurse" ? "intake" : "provider");
   const setActiveTabSafe = (id: Tab) => {
-    if (currentRole === "nurse" && (id === "provider" || id === "addendum")) return;
+    if ((id === "provider" || id === "addendum") && !isProviderUser) return;
     if (currentRole === "provider" && id !== "provider" && id !== "addendum") return;
     setValidationErrors([]);
+    if (id === "provider" || id === "addendum") setCurrentRoleState("provider");
     setActiveTab(id);
   };
 
