@@ -1693,27 +1693,36 @@ export default function EncounterPage() {
                       <p className="mt-0.5 text-gray-900 dark:text-white">{administration.additivesMedications || "None"}</p>
                     </div>
                     {administration.notes ? <div><strong className="text-gray-600 dark:text-gray-400">Order notes:</strong> <span className="text-gray-900 dark:text-white">{administration.notes}</span></div> : null}
-                    {!orderApproved && status === "ready_for_provider" && canEditProviderByRole && (
-                      <div className="pt-2 flex flex-wrap items-end gap-4">
-                        <button type="button" onClick={handleApproveOrder} className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Approve order</button>
-                      </div>
-                    )}
-                    {orderApproved && (
-                      <p className="text-xs text-green-600 dark:text-green-400 pt-1">Approved by {administration.orderApprovedBy} {administration.orderApprovedAt ? new Date(administration.orderApprovedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }) : ""}</p>
-                    )}
-                    {status === "ready_for_provider" && canEditProviderByRole && (
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Decline to treat</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">If you decline to treat this patient based on the information provided, document the reason below (optional) and confirm.</p>
-                        <textarea
-                          value={declineReasonInput}
-                          onChange={(e) => setDeclineReasonInput(e.target.value)}
-                          rows={2}
-                          placeholder="Reason for declining (optional)..."
-                          className="mb-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                        />
-                        <button type="button" onClick={handleDeclineToTreat} className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Decline to treat</button>
-                      </div>
+                    {canEditProviderByRole && (
+                      <>
+                        {orderApproved ? (
+                          <p className="text-xs text-green-600 dark:text-green-400 pt-1">Approved by {administration.orderApprovedBy} {administration.orderApprovedAt ? new Date(administration.orderApprovedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }) : ""}</p>
+                        ) : status === "ready_for_provider" ? (
+                          <div className="pt-2 flex flex-wrap items-end gap-4">
+                            <button type="button" onClick={handleApproveOrder} className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">Approve order</button>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 pt-1">Nursing must mark the visit complete before you can approve the order.</p>
+                        )}
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Decline to treat</p>
+                          {status === "ready_for_provider" ? (
+                            <>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">If you decline to treat this patient based on the information provided, document the reason below (optional) and confirm.</p>
+                              <textarea
+                                value={declineReasonInput}
+                                onChange={(e) => setDeclineReasonInput(e.target.value)}
+                                rows={2}
+                                placeholder="Reason for declining (optional)..."
+                                className="mb-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                              />
+                              <button type="button" onClick={handleDeclineToTreat} className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Decline to treat</button>
+                            </>
+                          ) : (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Available after nursing marks the visit complete.</p>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
