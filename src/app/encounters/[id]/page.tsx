@@ -668,7 +668,7 @@ export default function EncounterPage() {
   const canEditNursingByRole =
     roleLower === "nursing" || roleLower === "provider" || roleLower === "admin" || roleLower === "";
   const canEditProviderByRole = roleLower === "provider" || roleLower === "admin";
-  const canShowApproveDecline = treatAsProviderForActions;
+  const canShowApproveDecline = treatAsProviderForActions || (activeTab === "provider" && roleLower === "");
   const nursingSectionReadOnly = !canEditNursingByRole || isNurseLocked;
   const administrationSectionReadOnly = !canEditNursingByRole || isAdministrationLocked;
   const providerSectionReadOnly = !canEditProviderByRole || isProviderLocked;
